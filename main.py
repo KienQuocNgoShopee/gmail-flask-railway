@@ -18,7 +18,6 @@ SCOPES = [
 SHEET_ID = "1sEoD3mA_6edR2zvssTAXR2DoJiMnTQhYuoHOg1j2fes"
 #1pLGWEeKRL57_36IUJWzHN2IzuanpL8jMZVhMdeHXLiw
 
-
 def get_google_services():
     if "CREDENTIALS_JSON" in os.environ:
         with open("credentials.json", "w") as f:
@@ -44,8 +43,6 @@ def get_google_services():
         build('drive', 'v3', credentials=creds)
     )
 
-
-# CACHE SHEET METADATA - THAY ĐỔI 1
 _sheet_metadata_cache = None
 
 def get_sheet_metadata(sheets_service):
@@ -58,10 +55,9 @@ def get_sheet_metadata(sheets_service):
             return None
     return _sheet_metadata_cache
 
-
 def get_sheet_id_by_name(sheets_service, sheet_name):
     try:
-        spreadsheet = get_sheet_metadata(sheets_service)  # SỬ DỤNG CACHE
+        spreadsheet = get_sheet_metadata(sheets_service)
         if spreadsheet:
             for sheet in spreadsheet.get('sheets', []):
                 if sheet['properties']['title'] == sheet_name:
@@ -70,8 +66,6 @@ def get_sheet_id_by_name(sheets_service, sheet_name):
         print(f"❌ get_sheet_id_by_name error: {e}")
     return None
 
-
-# BATCH DELETE ROWS - THAY ĐỔI 2
 def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3):
     try:
         if not row_indices:
@@ -81,7 +75,6 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
         if output_sheet_id is None:
             return False
 
-        # Sắp xếp và chuyển đổi indices
         sorted_indices = sorted(row_indices, reverse=True)
         delete_requests = []
         
@@ -98,7 +91,6 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
                 }
             })
 
-        # Thực hiện batch delete
         if delete_requests:
             batch_request = {"requests": delete_requests}
             sheets_service.spreadsheets().batchUpdate(spreadsheetId=SHEET_ID, body=batch_request).execute()
@@ -108,22 +100,17 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
         print(f"❌ batch_delete_rows_from_output_sheet error: {e}")
         return False
 
-
-# BATCH APPEND TO SEND_EMAIL SHEET - THAY ĐỔI 3
 def batch_move_to_send_email_sheet(sheets_service, rows_data):
     try:
-        # Kiểm tra và tạo sheet nếu cần
         spreadsheet = get_sheet_metadata(sheets_service)
         if "send_email" not in [s['properties']['title'] for s in spreadsheet.get('sheets', [])]:
             create_sheet_request = {
                 "requests": [{"addSheet": {"properties": {"title": "send_email"}}}]
             }
             sheets_service.spreadsheets().batchUpdate(spreadsheetId=SHEET_ID, body=create_sheet_request).execute()
-            # Clear cache để reload metadata
             global _sheet_metadata_cache
             _sheet_metadata_cache = None
 
-        # Batch append tất cả rows
         if rows_data:
             sheets_service.spreadsheets().values().append(
                 spreadsheetId=SHEET_ID,
@@ -138,8 +125,6 @@ def batch_move_to_send_email_sheet(sheets_service, rows_data):
         print(f"❌ batch_move_to_send_email_sheet error: {e}")
         return False
 
-
-# BATCH COLOR FORMATTING - THAY ĐỔI 4
 def batch_format_send_email_sheet(sheets_service, start_row, status_list):
     try:
         sheet_id = get_sheet_id_by_name(sheets_service, "send_email")
@@ -170,8 +155,7 @@ def batch_format_send_email_sheet(sheets_service, start_row, status_list):
         return True
     except Exception as e:
         print(f"❌ batch_format_send_email_sheet error: {e}")
-        return True  # Không fail nếu format lỗi
-
+        return True
 
 def get_sheet_data(sheets_service, spreadsheet_id, sheet_name, start_row=3):
     try:
@@ -184,7 +168,6 @@ def get_sheet_data(sheets_service, spreadsheet_id, sheet_name, start_row=3):
     except Exception as e:
         print(f"❌ get_sheet_data error: {e}")
         return []
-
 
 def download_excel_file(drive_service, file_url):
     try:
@@ -199,7 +182,6 @@ def download_excel_file(drive_service, file_url):
     except Exception as e:
         print(f"❌ download_excel_file error: {e}")
         return None
-
 
 def parse_sheet_data_to_email_list(sheet_data):
     email_list = []
@@ -226,7 +208,6 @@ def parse_sheet_data_to_email_list(sheet_data):
             print(f"❌ parse_sheet_data_to_email_list error on row {i+1}: {e}")
     return email_list
 
-
 def create_message_with_attachment(to, cc, subject, message_text, attachment_data=None, attachment_name=None, in_reply_to=None, references=None):
     if attachment_data:
         message = MIMEMultipart()
@@ -246,20 +227,17 @@ def create_message_with_attachment(to, cc, subject, message_text, attachment_dat
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     return {'raw': raw}
 
-
 def send_message(service, user_id, message, thread_id=None):
     body = {'raw': message['raw']}
     if thread_id:
         body['threadId'] = thread_id
     return service.users().messages().send(userId=user_id, body=body).execute()
 
-
 def get_header_value(headers, header_name):
     for header in headers:
         if header['name'].lower() == header_name.lower():
             return header['value']
     return None
-
 
 def search_email_threads_by_subject(service, user_id, subject):
     try:
@@ -276,7 +254,6 @@ def search_email_threads_by_subject(service, user_id, subject):
     except Exception as e:
         print(f"❌ search_email_threads_by_subject error: {e}")
         return []
-
 
 def get_thread_messages(service, user_id, thread_id):
     try:
@@ -299,10 +276,8 @@ def get_thread_messages(service, user_id, thread_id):
         print(f"❌ get_thread_messages error: {e}")
         return []
 
-
 def filter_original_messages(messages):
     return [msg for msg in messages if msg['subject'] and not (msg['subject'].startswith("Re:") or "(Failure)" in msg['subject'] or msg['subject'].startswith("Fwd:"))]
-
 
 def send_email_smart_reply(service, to_email, cc_email, subject, message_text, attachment_data=None, attachment_name=None):
     thread_ids = search_email_threads_by_subject(service, "me", subject)
@@ -336,41 +311,19 @@ def send_email_smart_reply(service, to_email, cc_email, subject, message_text, a
     sent = send_message(service, "me", message, thread_id=selected_thread_id)
     return sent, last_message['subject'], subject
 
-
-# OPTIMIZED BATCH PROCESSING - THAY ĐỔI 6
 def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service):
-    """
-    GIẢI THÍCH THAY ĐỔI 6:
-    
-    TRƯỚC ĐÂY (Code cũ):
-    for mỗi email:
-        1. Gửi email
-        2. Gọi move_to_send_email_sheet_with_status() -> 1 API call để append + 1 API call để format màu
-        3. Gọi delete_row_from_output_sheet() -> 1 API call để xóa row
-    
-    BẰNG CÁCH NÀY (Code mới):  
-    1. Xử lý tất cả emails và chuẩn bị data
-    2. Gọi batch_move_to_send_email_sheet() 1 lần -> append tất cả rows cùng lúc
-    3. Gọi batch_format_send_email_sheet() 1 lần -> format tất cả màu cùng lúc  
-    4. Gọi batch_delete_rows_from_output_sheet() 1 lần -> xóa tất cả rows cùng lúc
-    
-    KẾT QUẢ: Từ 3N API calls xuống còn 3 API calls (N = số emails)
-    """
     results = []
-    rows_to_delete = []        # Danh sách các row cần xóa từ Output sheet
-    rows_to_add = []           # Danh sách các row cần thêm vào send_email sheet  
-    status_list = []           # Danh sách status để format màu
+    rows_to_delete = []
+    rows_to_add = []
+    status_list = []
     
-    # Bước 1: Xử lý từng email và thu thập data
     for email_data in email_data_list:
         try:
             content = f"""Dear Team,\nSOC gửi bàn giao hàng theo thông tin như sau:\nLH_Trip : {email_data['lh_trip']}\nThời gian: {email_data['cot']}\nSố lượng TO: {email_data['quantity_to']}\nSố lượng Order: {email_data['quantity_order']}\nChi tiết file đính kèm: """
             
-            # Download file như cũ (không batch)
             attachment_data = download_excel_file(drive_service, email_data['file_link']) if email_data['file_link'] else None
             attachment_name = f"{email_data['hub']}.xlsx"
             
-            # Gửi email
             sent, original_subject, current_subject = send_email_smart_reply(
                 service=gmail_service,
                 to_email=email_data['recipient'],
@@ -383,7 +336,6 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
             
             subject_status = "Subject OK" if current_subject == original_subject else "Subject Wrong"
             
-            # Thu thập data cho batch operations (thay vì gọi API ngay)
             extended_row = list(email_data['original_row_data']) + [str(original_subject), str(subject_status)]
             rows_to_add.append(extended_row)
             status_list.append(subject_status)
@@ -394,9 +346,7 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
             print(f"❌ process_email_batch error: {e}")
             results.append({'success': False, 'error': str(e)})
     
-    # Bước 2: Thực hiện batch operations (thay vì từng cái một)
     if rows_to_add:
-        # Lấy số row hiện tại để biết vị trí format
         try:
             current_rows = len(sheets_service.spreadsheets().values().get(
                 spreadsheetId=SHEET_ID,
@@ -406,18 +356,13 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
         except:
             start_format_row = 1
         
-        # 1 API call: Append tất cả rows vào send_email sheet
         batch_move_to_send_email_sheet(sheets_service, rows_to_add)
-        
-        # 1 API call: Format màu cho tất cả rows
         batch_format_send_email_sheet(sheets_service, start_format_row, status_list)
     
-    # 1 API call: Xóa tất cả rows từ output sheet
     batch_delete_rows_from_output_sheet(sheets_service, rows_to_delete)
     
     print(f"✅ Processed {len(email_data_list)} emails, deleted {len(rows_to_delete)} rows.")
     return results
-
 
 def main():
     SPREADSHEET_ID = SHEET_ID
@@ -431,7 +376,6 @@ def main():
     if not email_data_list:
         return
     process_email_batch(email_data_list, drive_service, sheets_service, gmail_service)
-
 
 if __name__ == "__main__":
     main()

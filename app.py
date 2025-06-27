@@ -1,57 +1,50 @@
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template
 import main
 import os
 import threading
 
 app = Flask(__name__)
 
-# HTML đơn giản với nút bấm
-HTML_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Gửi Email</title>
-</head>
-<body>
-    <h2>Gửi Email từ Google Sheets</h2>
-    <button onclick="sendEmails()">Chạy gửi mail</button>
-    <p id="result"></p>
+# Biến toàn cục theo dõi trạng thái
+status = {
+    "running": False,
+    "message": "Chưa chạy"
+}
 
-    <script>
-        function sendEmails() {
-            fetch('/run', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('result').innerText = data.message;
-                })
-                .catch(error => {
-                    document.getElementById('result').innerText = 'Lỗi: ' + error;
-                });
-        }
-    </script>
-</body>
-</html>
-"""
-
-# Trang web gốc hiển thị nút
+# Trang chính hiển thị giao diện
 @app.route("/", methods=["GET"])
 def home():
-    return render_template_string(HTML_PAGE)
+    return render_template("index.html")
 
-# API chạy background task
+# Hàm chạy nền gọi main.main()
 def run_main_background():
     try:
+        status["running"] = True
+        status["message"] = "Đang chạy..."
         main.main()
+        status["message"] = "Đã hoàn thành"
     except Exception as e:
-        print(f"Error in background task: {e}")
+        status["message"] = f"Lỗi: {e}"
+    finally:
+        status["running"] = False
 
+# API khởi chạy thread nền
 @app.route("/run", methods=["POST"])
 def run_batch():
     try:
+        if status["running"]:
+            return jsonify({"status": "running", "message": "Đang chạy, vui lòng đợi hoàn thành."}), 200
+
         threading.Thread(target=run_main_background).start()
         return jsonify({"status": "started", "message": "Emails đang được gửi ở nền"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# API kiểm tra trạng thái
+@app.route("/status", methods=["GET"])
+def check_status():
+    return jsonify(status)
+
+# Khởi chạy Flask app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Automation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <i class="fas fa-envelope-open-text"></i>
+            <h1>Email Automation System</h1>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <button id="sendBtn" class="btn-primary" onclick="sendEmails()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Chạy gửi mail</span>
+                </button>
+            </div>
+            
+            <div class="status-panel">
+                <div class="status-header">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Trạng thái hệ thống</span>
+                </div>
+                <div id="status-content">
+                    <div id="status-indicator" class="status-indicator idle">
+                        <div class="status-dot"></div>
+                        <span id="result">Chưa chạy</span>
+                    </div>
+                    <div id="progress-bar" class="progress-bar hidden">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h3><i class="fas fa-lightbulb"></i> Lưu ý</h3>
+                <ul>
+                    <li>Chỉ được chọn và gửi tối đa 10 mail mỗi lần để tránh TimeOut</li>
+                    <li>Người gửi hiện tại: kienquoc.ngo@shopee.com</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
