@@ -20,6 +20,11 @@ SHEET_ID = "1sEoD3mA_6edR2zvssTAXR2DoJiMnTQhYuoHOg1j2fes"
 
 
 def get_google_services():
+    if "CREDENTIALS_JSON" in os.environ:
+        with open("credentials.json", "w") as f:
+            f.write(os.environ["CREDENTIALS_JSON"])
+
+
     creds = None
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
