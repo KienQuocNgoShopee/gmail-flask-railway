@@ -23,7 +23,9 @@ def get_google_services():
     if "CREDENTIALS_JSON" in os.environ:
         with open("credentials.json", "w") as f:
             f.write(os.environ["CREDENTIALS_JSON"])
-
+    if "TOKEN_JSON" in os.environ:
+        with open("token.json", "w") as f:
+            f.write(os.environ["TOKEN_JSON"])
 
     creds = None
     if os.path.exists('token.json'):
@@ -32,8 +34,7 @@ def get_google_services():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            raise Exception("⚠️ Token is invalid or missing. Please run locally to generate new token.json.")
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
