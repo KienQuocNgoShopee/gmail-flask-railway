@@ -97,6 +97,10 @@ def oauth2callback():
     user_info = oauth2_client.userinfo().get().execute()
     user_email = user_info["email"]
 
+    # Chỉ cho phép domain cụ thể
+    if not (user_email.endswith("@shopee.com") or user_email.endswith("@spxexpress.com")):
+        return f"❌ Email không được phép truy cập: {user_email}", 403
+
     db.collection("users").document(user_email).set({
         "token": creds.to_json()
     })
@@ -151,6 +155,10 @@ def run_batch():
 def logout():
     session.clear()
     return redirect("/")
+
+@app.route("/healthz")
+def healthz():
+    return "OK", 200
 
 if __name__ == "__main__":
     app.run(debug=False)
