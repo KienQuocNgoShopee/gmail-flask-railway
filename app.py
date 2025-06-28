@@ -1,50 +1,83 @@
-from flask import Flask, jsonify, request, render_template
-import main
+from flask import Flask, session, redirect, url_for, request, render_template, jsonify
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 import os
-import threading
+import firebase_admin
+from firebase_admin import credentials, firestore
+import json
+import pathlib
 
 app = Flask(__name__)
+app.secret_key = "your-secret-key"  # Bắt buộc để session hoạt động
 
-# Biến toàn cục theo dõi trạng thái
-status = {
-    "running": False,
-    "message": "Chưa chạy"
-}
+# --- KHỞI TẠO FIREBASE ---
+cred = credentials.Certificate("firebase_service_account.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
-# Trang chính hiển thị giao diện
-@app.route("/", methods=["GET"])
-def home():
-    return render_template("index.html")
+# --- GOOGLE OAUTH SCOPES ---
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "openid"
+]
 
-# Hàm chạy nền gọi main.main()
-def run_main_background():
-    try:
-        status["running"] = True
-        status["message"] = "Đang chạy..."
-        main.main()
-        status["message"] = "Đã hoàn thành"
-    except Exception as e:
-        status["message"] = f"Lỗi: {e}"
-    finally:
-        status["running"] = False
+# --- TRANG CHỦ ---
+@app.route("/")
+def index():
+    if "user_email" in session:
+        return render_template("index.html", email=session["user_email"])
+    return redirect("/login")
 
-# API khởi chạy thread nền
-@app.route("/run", methods=["POST"])
-def run_batch():
-    try:
-        if status["running"]:
-            return jsonify({"status": "running", "message": "Đang chạy, vui lòng đợi hoàn thành."}), 200
+# --- BẮT ĐẦU ĐĂNG NHẬP ---
+@app.route("/login")
+def login():
+    flow = Flow.from_client_secrets_file(
+        "credentials.json",
+        scopes=SCOPES,
+        redirect_uri="http://localhost:5000/oauth2callback"
+    )
+    #redirect_uri=url_for("oauth2callback", _external=True)
+    auth_url, state = flow.authorization_url(prompt="consent", access_type="offline", include_granted_scopes="true")
+    session["state"] = state
+    return redirect(auth_url)
 
-        threading.Thread(target=run_main_background).start()
-        return jsonify({"status": "started", "message": "Emails đang được gửi ở nền"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+# --- XỬ LÝ SAU KHI NGƯỜI DÙNG ĐĂNG NHẬP ---
+@app.route("/oauth2callback")
+def oauth2callback():
+    if "state" not in session:
+        return redirect("/login")
+    state = session["state"]
+    flow = Flow.from_client_secrets_file(
+        "credentials.json",
+        scopes=SCOPES,
+        state=state,
+        redirect_uri=url_for("oauth2callback", _external=True)
+    )
+    flow.fetch_token(authorization_response=request.url)
 
-# API kiểm tra trạng thái
-@app.route("/status", methods=["GET"])
-def check_status():
-    return jsonify(status)
+    creds = flow.credentials
 
-# Khởi chạy Flask app
+    # Lấy email người dùng từ API Google
+    oauth2_client = build("oauth2", "v2", credentials=creds)
+    user_info = oauth2_client.userinfo().get().execute()
+    user_email = user_info["email"]
+
+    # Lưu token vào Firestore
+    db.collection("users").document(user_email).set({
+        "token": creds.to_json()
+    })
+
+    # Ghi nhớ session người dùng
+    session["user_email"] = user_email
+
+    return redirect("/")
+
+# --- ĐĂNG XUẤT ---
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    app.run(debug=True)
