@@ -11,9 +11,13 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # --- KHỞI TẠO FIREBASE ---
-cred = credentials.Certificate("firebase_service_account.json")
+firebase_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+if not firebase_json:
+    raise Exception("⚠️ FIREBASE_SERVICE_ACCOUNT_JSON không được thiết lập!")
+
+cred_dict = json.loads(firebase_json)
+cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
-db = firestore.client()
 
 # --- GOOGLE OAUTH SCOPES ---
 SCOPES = [
