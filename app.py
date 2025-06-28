@@ -1,5 +1,3 @@
-# --- app.py (hoàn chỉnh với Giai Đoạn 3) ---
-
 from flask import Flask, session, redirect, url_for, request, render_template, jsonify
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -9,11 +7,13 @@ from firebase_admin import credentials, firestore
 import json
 import threading
 from main import main as run_main
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-# --- KHỞdi TẠO FIREBASE ---
+# --- KHỞI TẠO FIREBASE ---
 firebase_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 if not firebase_json:
     raise Exception("⚠️ FIREBASE_SERVICE_ACCOUNT_JSON không được thiết lập!")
@@ -34,8 +34,7 @@ SCOPES = [
     "openid"
 ]
 
-
-# --- TRạNG THÁI ---
+# --- TRẠNG THÁI ---
 status = {
     "running": False,
     "message": "Chưa chạy",
@@ -84,6 +83,16 @@ def oauth2callback():
     flow.fetch_token(authorization_response=request.url)
     creds = flow.credentials
 
+    # Tự động làm mới token nếu hết hạn
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                return f"❌ Không thể refresh token: {e}", 401
+        else:
+            return "❌ Token không hợp lệ và không có refresh_token", 401
+
     oauth2_client = build("oauth2", "v2", credentials=creds)
     user_info = oauth2_client.userinfo().get().execute()
     user_email = user_info["email"]
@@ -103,7 +112,6 @@ def check_status():
         "by": status["by"]
     })
 
-
 # --- API CHẠY Gửi MAIL ---
 @app.route("/run", methods=["POST"])
 def run_batch():
@@ -119,7 +127,6 @@ def run_batch():
             "message": f"Đang có người khác gửi: {status['by']}"
         })
 
-    # Nếu chính bạn đang gửi, cho phép tiếp tục
     def task():
         try:
             status["running"] = True
@@ -128,14 +135,16 @@ def run_batch():
             run_main(user_email)
             status["message"] = "Đã hoàn thành"
         except Exception as e:
-            status["message"] = f"Lỗi: {e}"
+            if "invalid_grant" in str(e) or "unauthorized" in str(e).lower():
+                status["message"] = "⚠️ Token không hợp lệ. Vui lòng đăng nhập lại."
+            else:
+                status["message"] = f"Lỗi: {e}"
         finally:
             status["running"] = False
             status["by"] = None
 
     threading.Thread(target=task).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})
-
 
 # --- LOGOUT ---
 @app.route("/logout")
