@@ -67,7 +67,7 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
         delete_requests = []
         
         for row_index in sorted_indices:
-            actual_row_index = row_index + start_row - 2
+            actual_row_index = row_index + start_row - 1
             delete_requests.append({
                 "deleteDimension": {
                     "range": {
