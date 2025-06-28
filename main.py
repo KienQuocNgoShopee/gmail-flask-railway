@@ -1,12 +1,12 @@
 import os
+import json
 import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from firebase_admin import firestore
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
