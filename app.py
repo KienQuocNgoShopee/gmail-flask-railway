@@ -8,7 +8,7 @@ import json
 import pathlib
 
 app = Flask(__name__)
-app.secret_key = "your-secret-key"  # Bắt buộc để session hoạt động
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # --- KHỞI TẠO FIREBASE ---
 cred = credentials.Certificate("firebase_service_account.json")
