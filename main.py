@@ -15,6 +15,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.readonly'
 ]
 
+_sheet_metadata_cache = None
 
 SHEET_ID = "1sEoD3mA_6edR2zvssTAXR2DoJiMnTQhYuoHOg1j2fes"
 #1pLGWEeKRL57_36IUJWzHN2IzuanpL8jMZVhMdeHXLiw
@@ -66,7 +67,7 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
         delete_requests = []
         
         for row_index in sorted_indices:
-            actual_row_index = row_index + start_row - 1
+            actual_row_index = row_index + start_row - 2
             delete_requests.append({
                 "deleteDimension": {
                     "range": {
