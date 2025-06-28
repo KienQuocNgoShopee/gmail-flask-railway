@@ -36,13 +36,25 @@ def index():
 # --- BẮT ĐẦU ĐĂNG NHẬP ---
 @app.route("/login")
 def login():
-    flow = Flow.from_client_secrets_file(
-        "credentials.json",
+    # Lấy config từ biến môi trường
+    credentials_json = os.environ.get("CREDENTIALS_JSON")
+    if not credentials_json:
+        return "❌ Thiếu biến môi trường CREDENTIALS_JSON", 500
+
+    credentials_dict = json.loads(credentials_json)
+
+    # Khởi tạo OAuth flow từ dict thay vì file
+    flow = Flow.from_client_config(
+        credentials_dict,
         scopes=SCOPES,
-        redirect_uri="http://localhost:5000/oauth2callback"
+        redirect_uri=url_for("oauth2callback", _external=True)
     )
-    #redirect_uri=url_for("oauth2callback", _external=True)
-    auth_url, state = flow.authorization_url(prompt="consent", access_type="offline", include_granted_scopes="true")
+
+    auth_url, state = flow.authorization_url(
+        prompt="consent",
+        access_type="offline",
+        include_granted_scopes="true"
+    )
     session["state"] = state
     return redirect(auth_url)
 
