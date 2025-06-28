@@ -103,11 +103,13 @@ def run_batch():
     if status["running"]:
         return jsonify({"status": "running", "message": "Đang chạy..."})
 
+    user_email = session["user_email"]
+
     def task():
         try:
             status["running"] = True
             status["message"] = "Đang gửi email..."
-            run_main(session["user_email"])
+            run_main(user_email)
             status["message"] = "Đã hoàn thành"
         except Exception as e:
             status["message"] = f"Lỗi: {e}"
@@ -116,6 +118,7 @@ def run_batch():
 
     threading.Thread(target=task).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})
+
 
 # --- LOGOUT ---
 @app.route("/logout")
