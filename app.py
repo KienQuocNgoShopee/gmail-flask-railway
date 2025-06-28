@@ -45,8 +45,15 @@ status = {
 @app.route("/")
 def index():
     if "user_email" in session:
-        return render_template("index.html", email=session["user_email"])
+        user_email = session["user_email"]
+        doc = db.collection("users").document(user_email).get()
+        if doc.exists:
+            return render_template("index.html", email=user_email)
+        else:
+            session.clear()
+            return redirect("/login")
     return redirect("/login")
+
 
 # --- Bắt Đầu Đăng Nhập ---
 @app.route("/login")
@@ -120,11 +127,15 @@ def check_status():
 @app.route("/run", methods=["POST"])
 def run_batch():
     if "user_email" not in session:
-        return jsonify({"status": "error", "message": "Chưa login"}), 401
+        return jsonify({"status": "error", "message": "Chưa đăng nhập"}), 401
 
     user_email = session["user_email"]
 
-    # Nếu người khác đang chạy thì từ chối
+    user_doc = db.collection("users").document(user_email).get()
+    if not user_doc.exists:
+        session.clear()
+        return jsonify({"status": "error", "message": "Token đã bị xoá. Vui lòng đăng nhập lại."}), 401
+
     if status["running"] and status.get("by") != user_email:
         return jsonify({
             "status": "busy",
