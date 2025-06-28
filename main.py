@@ -15,35 +15,22 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.readonly'
 ]
 
+
 SHEET_ID = "1sEoD3mA_6edR2zvssTAXR2DoJiMnTQhYuoHOg1j2fes"
 #1pLGWEeKRL57_36IUJWzHN2IzuanpL8jMZVhMdeHXLiw
 
-def get_google_services():
-    if "CREDENTIALS_JSON" in os.environ:
-        with open("credentials.json", "w") as f:
-            f.write(os.environ["CREDENTIALS_JSON"])
-    if "TOKEN_JSON" in os.environ:
-        with open("token.json", "w") as f:
-            f.write(os.environ["TOKEN_JSON"])
+def get_google_services(user_email):
+    db = firestore.client()
+    doc = db.collection("users").document(user_email).get()
+    if not doc.exists:
+        raise Exception("❌ Không tìm thấy token cho người dùng")
 
-    creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            raise Exception("⚠️ Token is invalid or missing. Please run locally to generate new token.json.")
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-
+    creds = Credentials.from_authorized_user_info(json.loads(doc.to_dict()["token"]), SCOPES)
     return (
         build('gmail', 'v1', credentials=creds),
         build('sheets', 'v4', credentials=creds),
         build('drive', 'v3', credentials=creds)
     )
-
-_sheet_metadata_cache = None
 
 def get_sheet_metadata(sheets_service):
     global _sheet_metadata_cache
@@ -364,17 +351,22 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
     print(f"✅ Processed {len(email_data_list)} emails, deleted {len(rows_to_delete)} rows.")
     return results
 
-def main():
-    SPREADSHEET_ID = SHEET_ID
+def main(user_email):
     SHEET_NAME = "Output"
     START_ROW = 3
-    gmail_service, sheets_service, drive_service = get_google_services()
-    sheet_data = get_sheet_data(sheets_service, SPREADSHEET_ID, SHEET_NAME, START_ROW)
+    
+    gmail_service, sheets_service, drive_service = get_google_services(user_email)
+
+    sheet_data = get_sheet_data(sheets_service, SHEET_ID, SHEET_NAME, START_ROW)
     if not sheet_data:
+        print("⚠️ Không có dữ liệu cần gửi.")
         return
+
     email_data_list = parse_sheet_data_to_email_list(sheet_data)
     if not email_data_list:
+        print("⚠️ Không có dòng nào được đánh dấu gửi.")
         return
+
     process_email_batch(email_data_list, drive_service, sheets_service, gmail_service)
 
 if __name__ == "__main__":
