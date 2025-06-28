@@ -36,7 +36,11 @@ SCOPES = [
 
 
 # --- TRạNG THÁI ---
-status = {"running": False, "message": "Chưa chạy"}
+status = {
+    "running": False,
+    "message": "Chưa chạy",
+    "by": None
+}
 
 # --- TRANG CHỦ ---
 @app.route("/")
@@ -93,7 +97,12 @@ def oauth2callback():
 # --- API CHECK TRẠNG THÁI ---
 @app.route("/status")
 def check_status():
-    return jsonify(status)
+    return jsonify({
+        "running": status["running"],
+        "message": status["message"],
+        "by": status["by"]
+    })
+
 
 # --- API CHẠY Gửi MAIL ---
 @app.route("/run", methods=["POST"])
@@ -101,14 +110,20 @@ def run_batch():
     if "user_email" not in session:
         return jsonify({"status": "error", "message": "Chưa login"}), 401
 
-    if status["running"]:
-        return jsonify({"status": "running", "message": "Đang chạy..."})
-
     user_email = session["user_email"]
 
+    # Nếu người khác đang chạy thì từ chối
+    if status["running"] and status.get("by") != user_email:
+        return jsonify({
+            "status": "busy",
+            "message": f"Đang có người khác gửi: {status['by']}"
+        })
+
+    # Nếu chính bạn đang gửi, cho phép tiếp tục
     def task():
         try:
             status["running"] = True
+            status["by"] = user_email
             status["message"] = "Đang gửi email..."
             run_main(user_email)
             status["message"] = "Đã hoàn thành"
@@ -116,6 +131,7 @@ def run_batch():
             status["message"] = f"Lỗi: {e}"
         finally:
             status["running"] = False
+            status["by"] = None
 
     threading.Thread(target=task).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})

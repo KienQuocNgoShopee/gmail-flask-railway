@@ -3,14 +3,18 @@ const sendBtn = document.getElementById("sendBtn");
 const resultElement = document.getElementById('result');
 const statusIndicator = document.getElementById('status-indicator');
 const progressBar = document.getElementById('progress-bar');
+const currentUserEmail = document.body.dataset.email;
 
 // Hàm cập nhật trạng thái UI
-function updateStatusUI(status, message) {
-    resultElement.innerText = message;
-    
-    // Reset classes
+function updateStatusUI(status, message, senderEmail = null) {
+    if (status === 'running' && senderEmail && senderEmail !== currentUserEmail) {
+        resultElement.innerText = `Đang có người khác gửi: ${senderEmail}`;
+    } else {
+        resultElement.innerText = message;
+    }
+
     statusIndicator.className = 'status-indicator';
-    
+
     if (status === 'running') {
         statusIndicator.classList.add('running');
         progressBar.classList.remove('hidden');
@@ -57,14 +61,16 @@ function checkStatusContinuously() {
             .then(response => response.json())
             .then(data => {
                 if (data.running) {
-                    updateStatusUI('running', data.message);
+                    if (data.by && data.by !== currentUserEmail) {
+                        updateStatusUI('running', data.message, data.by);
+                    } else {
+                        updateStatusUI('running', data.message);
+                    }
                 } else {
-                    // Kiểm tra xem có lỗi không
                     if (data.message.toLowerCase().includes('lỗi')) {
                         updateStatusUI('error', data.message);
                     } else if (data.message.includes('hoàn thành')) {
                         updateStatusUI('success', data.message);
-                        // Hiển thị thông báo hoàn thành
                         showNotification('Email đã được gửi thành công!', 'success');
                     } else {
                         updateStatusUI('idle', data.message);
@@ -142,8 +148,12 @@ window.addEventListener('load', function() {
         .then(response => response.json())
         .then(data => {
             if (data.running) {
-                updateStatusUI('running', data.message);
-                checkStatusContinuously();
+                if (data.by && data.by !== currentUserEmail) {
+                    updateStatusUI('running', data.message, data.by);
+                } else {
+                    updateStatusUI('running', data.message);
+                    checkStatusContinuously();
+                }
             } else {
                 if (data.message.toLowerCase().includes('lỗi')) {
                     updateStatusUI('error', data.message);
