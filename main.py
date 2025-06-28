@@ -1,12 +1,14 @@
 import os
 import json
 import base64
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from firebase_admin import firestore
+from googleapiclient.errors import HttpError
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
@@ -54,6 +56,21 @@ def get_sheet_id_by_name(sheets_service, sheet_name):
         print(f"❌ get_sheet_id_by_name error: {e}")
     return None
 
+def safe_batch_update(service, spreadsheet_id, body, retries=3):
+    for attempt in range(retries):
+        try:
+            return service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body=body
+            ).execute()
+        except HttpError as e:
+            if e.resp.status in [503, 500, 429]:
+                wait = 2 ** attempt
+                print(f"⚠️ Retry batchUpdate (attempt {attempt + 1}) after {wait}s due to error: {e}")
+                time.sleep(wait)
+            else:
+                raise e
+
 def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3):
     try:
         if not row_indices:
@@ -81,7 +98,8 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
 
         if delete_requests:
             batch_request = {"requests": delete_requests}
-            sheets_service.spreadsheets().batchUpdate(spreadsheetId=SHEET_ID, body=batch_request).execute()
+            safe_batch_update(sheets_service, SHEET_ID, batch_request)
+
         
         return True
     except Exception as e:
@@ -138,7 +156,7 @@ def batch_format_send_email_sheet(sheets_service, start_row, status_list):
 
         if format_requests:
             batch_request = {"requests": format_requests}
-            sheets_service.spreadsheets().batchUpdate(spreadsheetId=SHEET_ID, body=batch_request).execute()
+            safe_batch_update(sheets_service, SHEET_ID, batch_request)
         
         return True
     except Exception as e:
