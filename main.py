@@ -9,6 +9,7 @@ from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from firebase_admin import firestore
 from googleapiclient.errors import HttpError
+from datetime import datetime
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
@@ -317,6 +318,17 @@ def send_email_smart_reply(service, to_email, cc_email, subject, message_text, a
     sent = send_message(service, "me", message, thread_id=selected_thread_id)
     return sent, last_message['subject'], subject
 
+def format_datetime(dt_str):
+    try:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    except:
+        try:
+            dt = datetime.strptime(dt_str, "%d/%m/%Y %H:%M:%S")
+        except:
+            return dt_str
+
+    return dt.strftime("%d/%m/%Y %H:%M:%S")
+
 def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service):
     results = []
     rows_to_delete = []
@@ -325,6 +337,7 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
     
     for email_data in email_data_list:
         try:
+            email_data['time'] = format_datetime(email_data['time'])
             content = f"""Dear Team,\nSOC gửi bàn giao hàng theo thông tin như sau:\nLH_Trip : {email_data['lh_trip']}\nThời gian: {email_data['time']}\nSố lượng TO: {email_data['quantity_to']}\nSố lượng Order: {email_data['quantity_order']}\nChi tiết file đính kèm: """
             
             attachment_data = download_excel_file(drive_service, email_data['file_link']) if email_data['file_link'] else None
