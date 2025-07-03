@@ -325,7 +325,7 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
     
     for email_data in email_data_list:
         try:
-            content = f"""Dear Team,\nSOC gửi bàn giao hàng theo thông tin như sau:\nLH_Trip : {email_data['lh_trip']}\nThời gian: {email_data['cot']}\nSố lượng TO: {email_data['quantity_to']}\nSố lượng Order: {email_data['quantity_order']}\nChi tiết file đính kèm: """
+            content = f"""Dear Team,\nSOC gửi bàn giao hàng theo thông tin như sau:\nLH_Trip : {email_data['lh_trip']}\nThời gian: {email_data['time']}\nSố lượng TO: {email_data['quantity_to']}\nSố lượng Order: {email_data['quantity_order']}\nChi tiết file đính kèm: """
             
             attachment_data = download_excel_file(drive_service, email_data['file_link']) if email_data['file_link'] else None
             attachment_name = f"{email_data['hub']}.xlsx"
