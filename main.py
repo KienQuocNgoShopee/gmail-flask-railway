@@ -196,9 +196,7 @@ def parse_sheet_data_to_email_list(sheet_data):
         try:
             if len(row) > 11 and str(row[11]).strip().upper() == 'TRUE':
                 time_value = row[7] if len(row) > 7 else ""
-                date_value = row[0] if len(row) > 0 else ""
                 formatted_time = format_datetime(time_value)
-                formatted_date = format_datetime(date_value)
                 email_data = {
                     'row_index': i + 1,
                     'subject': row[2] if len(row) > 2 else "",
@@ -210,7 +208,7 @@ def parse_sheet_data_to_email_list(sheet_data):
                     'quantity_order': row[9] if len(row) > 9 else "",
                     'hub': row[5] if len(row) > 5 else "",
                     'file_link': row[10] if len(row) > 10 else "",
-                    'date': formatted_date,
+                    'date': row[0] if len(row) > 0 else "",
                     'cot': row[6] if len(row) > 6 else "",
                     'original_row_data': row
                 }
@@ -323,13 +321,16 @@ def send_email_smart_reply(service, to_email, cc_email, subject, message_text, a
     return sent, last_message['subject'], subject
 
 def format_datetime(dt_str):
-    for fmt in ["%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y", "%Y-%m-%d"]:
+    try:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    except:
         try:
-            dt = datetime.strptime(dt_str, fmt)
-            return dt.strftime("%d/%m/%Y %H:%M:%S") if "H" in fmt else dt.strftime("%d/%m/%Y")
+            dt = datetime.strptime(dt_str, "%d/%m/%Y %H:%M:%S")
         except:
-            continue
-    return dt_str
+            return dt_str
+
+    return dt.strftime("%d/%m/%Y %H:%M:%S")
+
 
 def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service):
     results = []
