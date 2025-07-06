@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>Nhật ký hệ thống</title>
-    <style>
-        body {
-            font-family: monospace;
-            background-color: #111;
-            color: #0f0;
-            padding: 20px;
-        }
-        pre {
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        .refresh-btn {
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/log.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <button class="refresh-btn" onclick="location.reload()">🔄 Làm mới</button>
-    <h2>📄 Nhật ký hệ thống</h2>
-    <pre>{{ log }}</pre>
+    <div class="container">
+        <div class="header">
+            <i class="fas fa-terminal"></i>
+            <h1>Nhật ký hệ thống</h1>
+        </div>
+
+        <div class="log-controls">
+            <button class="refresh-btn" onclick="location.reload()">
+                🔄 Làm mới log
+            </button>
+            <a class="back-link" href="/">← Quay về trang chính</a>
+        </div>
+
+        <div class="log-box">
+            {{ log }}
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
+        </div>
+    </div>
 </body>
 </html>
