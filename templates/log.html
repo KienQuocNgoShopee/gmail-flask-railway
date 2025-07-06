@@ -2,31 +2,249 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Nhật ký hệ thống</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/log.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhật ký hệ thống - Email Automation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .log-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .log-header i {
+            color: #FF9800;
+            font-size: 1.2rem;
+        }
+
+        .log-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #03A9F4, #0288D1);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(3, 169, 244, 0.3);
+            font-weight: 500;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(3, 169, 244, 0.4);
+        }
+
+        .refresh-btn i {
+            font-size: 1.1rem;
+        }
+
+        .back-link {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            background: #e3f2fd;
+            transform: translateX(-2px);
+        }
+
+        .log-content {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+
+        .log-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-content::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .log-content::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .log-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .log-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .log-stat i {
+            color: #2196F3;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .log-actions {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .refresh-btn {
+                justify-content: center;
+            }
+            
+            .back-link {
+                justify-content: center;
+            }
+            
+            .log-stats {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <i class="fas fa-terminal"></i>
             <h1>Nhật ký hệ thống</h1>
+            <p>Theo dõi hoạt động của Email Automation System</p>
         </div>
 
-        <div class="log-controls">
-            <button class="refresh-btn" onclick="location.reload()">
-                🔄 Làm mới log
-            </button>
-            <a class="back-link" href="/">← Quay về trang chính</a>
-        </div>
+        <div class="main-content">
+            <div class="log-container">
+                <div class="log-header">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Chi tiết nhật ký</span>
+                </div>
 
-        <div class="log-box">
-            {{ log }}
+                <div class="log-actions">
+                    <button class="refresh-btn" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Làm mới log</span>
+                    </button>
+                    <a href="/" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Quay về trang chính</span>
+                    </a>
+                </div>
+
+                <div class="log-stats">
+                    <div class="log-stat">
+                        <i class="fas fa-clock"></i>
+                        <span>Cập nhật lần cuối: <span id="lastUpdate"></span></span>
+                    </div>
+                    <div class="log-stat">
+                        <i class="fas fa-database"></i>
+                        <span>Kích thước log: <span id="logSize"></span></span>
+                    </div>
+                </div>
+
+                <div class="log-content" id="logContent">
+                    {{ log }}
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3><i class="fas fa-info-circle"></i> Thông tin</h3>
+                <ul>
+                    <li>Log được cập nhật theo thời gian thực</li>
+                    <li>Sử dụng nút "Làm mới log" để xem thông tin mới nhất</li>
+                    <li>Log hiển thị các hoạt động gửi email và lỗi hệ thống</li>
+                    <li>Cuộn xuống để xem các mục log mới nhất</li>
+                </ul>
+            </div>
         </div>
 
         <div class="footer">
             <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
         </div>
     </div>
+
+    <script>
+        // Cập nhật thời gian hiện tại
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('vi-VN');
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+
+        // Tính toán kích thước log
+        function calculateLogSize() {
+            const logContent = document.getElementById('logContent');
+            const logText = logContent.textContent || logContent.innerText;
+            const sizeInBytes = new Blob([logText]).size;
+            const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+            document.getElementById('logSize').textContent = sizeInKB + ' KB';
+        }
+
+        // Tự động cuộn xuống cuối log
+        function scrollToBottom() {
+            const logContent = document.getElementById('logContent');
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // Khởi tạo khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            calculateLogSize();
+            scrollToBottom();
+        });
+
+        // Cập nhật thời gian mỗi giây
+        setInterval(updateTime, 1000);
+    </script>
 </body>
 </html>
