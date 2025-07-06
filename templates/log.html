@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Nhật ký hệ thống</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #111;
+            color: #0f0;
+            padding: 20px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .refresh-btn {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button class="refresh-btn" onclick="location.reload()">🔄 Làm mới</button>
+    <h2>📄 Nhật ký hệ thống</h2>
+    <pre>{{ log }}</pre>
+</body>
+</html>

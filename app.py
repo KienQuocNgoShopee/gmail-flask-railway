@@ -9,6 +9,8 @@ import threading
 from main import main as run_main
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+import sys
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -123,6 +125,17 @@ def check_status():
         "by": status["by"]
     })
 
+# --- API CHECK LOG ---
+@app.route("/log")
+def view_log():
+    try:
+        with open("app.log", "r", encoding="utf-8") as f:
+            log_content = f.read()
+    except Exception as e:
+        log_content = f"Lỗi khi đọc log: {e}"
+
+    return render_template("log.html", log=log_content)
+
 # --- API CHẠY Gửi MAIL ---
 @app.route("/run", methods=["POST"])
 def run_batch():
@@ -143,20 +156,30 @@ def run_batch():
         })
 
     def task():
+        original_stdout = sys.stdout
+
         try:
             status["running"] = True
             status["by"] = user_email
             status["message"] = "Đang gửi email..."
+
+            sys.stdout = open("app.log", "a", encoding="utf-8") 
             run_main(user_email)
+            sys.stdout.close()
+
             status["message"] = "Đã hoàn thành"
+
         except Exception as e:
+            sys.stdout.close()
             if "invalid_grant" in str(e) or "unauthorized" in str(e).lower():
                 status["message"] = "⚠️ Token không hợp lệ. Vui lòng đăng nhập lại."
             else:
                 status["message"] = f"Lỗi: {e}"
         finally:
+            sys.stdout = original_stdout
             status["running"] = False
             status["by"] = None
+
 
     threading.Thread(target=task).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})

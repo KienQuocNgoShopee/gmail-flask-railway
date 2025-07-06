@@ -331,7 +331,6 @@ def format_datetime(dt_str):
 
     return dt.strftime("%d/%m/%Y %H:%M:%S")
 
-
 def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service):
     results = []
     rows_to_delete = []
