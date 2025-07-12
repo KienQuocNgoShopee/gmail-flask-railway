@@ -52,7 +52,7 @@ def index():
         if doc.exists:
             return render_template("index.html", email=user_email)
         else:
-            session.pop("user_email", None) 
+            session.clear()
             return redirect("/login")
     return redirect("/login")
 
@@ -78,6 +78,7 @@ def login():
 @app.route("/oauth2callback")
 def oauth2callback():
     if "state" not in session:
+        session.clear()
         return redirect("/login")
 
     credentials_json = os.environ.get("CREDENTIALS_JSON")
