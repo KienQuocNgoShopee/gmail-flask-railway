@@ -52,7 +52,7 @@ def index():
         if doc.exists:
             return render_template("index.html", email=user_email)
         else:
-            session.clear()
+            session.pop("user_email", None) 
             return redirect("/login")
     return redirect("/login")
 
