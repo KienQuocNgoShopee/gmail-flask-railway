@@ -308,7 +308,7 @@ def send_email_smart_reply(service, to_email, cc_email, subject, message_text, a
         sent = send_message(service, "me", message)
         return sent, subject, subject
 
-    selected_thread_id, thread_messages = valid_threads[-1]
+    selected_thread_id, thread_messages = valid_threads[0]
     filtered_messages = filter_original_messages(thread_messages)
     if not filtered_messages:
         return None, None, None
