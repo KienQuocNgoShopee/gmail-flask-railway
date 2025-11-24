@@ -140,17 +140,35 @@ def batch_format_send_email_sheet(sheets_service, start_row, status_list):
 
         format_requests = []
         for i, status in enumerate(status_list):
-            color = {"red": 1.0, "green": 0.0, "blue": 0.0} if status == "Subject Wrong" else {"red": 0.0, "green": 1.0, "blue": 0.0}
+            # Chọn màu theo Status
+            if status == "Reply vào thread đã có":
+                # xanh lá nhạt
+                color = {"red": 0.8, "green": 0.94, "blue": 0.8}
+            elif status == "Tạo thread mới":
+                # vàng nhạt
+                color = {"red": 1.0, "green": 0.95, "blue": 0.8}
+            elif status == "Lỗi khi gửi mail":
+                # đỏ nhạt
+                color = {"red": 1.0, "green": 0.8, "blue": 0.8}
+            else:
+                # fallback: xám nhạt cho các trạng thái khác
+                color = {"red": 0.9, "green": 0.9, "blue": 0.9}
+
             format_requests.append({
                 "repeatCell": {
                     "range": {
                         "sheetId": sheet_id,
+                        # start_row là 1-based, Sheets API dùng 0-based → -1
                         "startRowIndex": start_row + i - 1,
                         "endRowIndex": start_row + i,
-                        "startColumnIndex": 13,
+                        "startColumnIndex": 13,  # cột N (0-based)
                         "endColumnIndex": 14
                     },
-                    "cell": {"userEnteredFormat": {"backgroundColor": color}},
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": color
+                        }
+                    },
                     "fields": "userEnteredFormat.backgroundColor"
                 }
             })
@@ -288,13 +306,29 @@ def get_thread_messages(service, user_id, thread_id):
 def filter_original_messages(messages):
     return [msg for msg in messages if msg['subject'] and not (msg['subject'].startswith("Re:") or "(Failure)" in msg['subject'] or msg['subject'].startswith("Fwd:"))]
 
-def send_email_smart_reply(service, to_email, cc_email, subject, message_text, attachment_data=None, attachment_name=None):
+def send_email_smart_reply(service, to_email, cc_email, subject, message_text,
+                           attachment_data=None, attachment_name=None):
+    """
+    Trả về:
+        sent: dict response của Gmail API
+        original_subject: subject của mail gốc trong thread (hoặc subject hiện tại nếu thread mới)
+        current_subject: subject đang dùng để gửi (từ sheet)
+        mode: "new_thread" | "reply_thread"
+    """
+    # 1) Tìm thread theo subject
     thread_ids = search_email_threads_by_subject(service, "me", subject)
-    if not thread_ids:
-        message = create_message_with_attachment(to_email, cc_email, subject, message_text, attachment_data, attachment_name)
-        sent = send_message(service, "me", message)
-        return sent, subject, subject
 
+    # ❌ Không tìm thấy thread nào -> gửi mail mới
+    if not thread_ids:
+        message = create_message_with_attachment(
+            to_email, cc_email, subject, message_text,
+            attachment_data, attachment_name
+        )
+        sent = send_message(service, "me", message)
+        # Nếu gửi lỗi, send_message sẽ raise HttpError -> để exception bay ra ngoài
+        return sent, subject, subject, "new_thread"
+
+    # ✅ Có thread -> lọc các thread hợp lệ
     valid_threads = []
     for thread_id in thread_ids:
         messages = get_thread_messages(service, "me", thread_id)
@@ -303,22 +337,45 @@ def send_email_smart_reply(service, to_email, cc_email, subject, message_text, a
             if first_message['subject'] and not first_message['subject'].startswith("Re:"):
                 valid_threads.append((thread_id, messages))
 
+    # Không có thread hợp lệ (toàn Re:...) -> tạo thread mới
     if not valid_threads:
-        message = create_message_with_attachment(to_email, cc_email, subject, message_text, attachment_data, attachment_name)
+        message = create_message_with_attachment(
+            to_email, cc_email, subject, message_text,
+            attachment_data, attachment_name
+        )
         sent = send_message(service, "me", message)
-        return sent, subject, subject
+        return sent, subject, subject, "new_thread"
 
+    # 👉 Chọn thread hợp lệ mới nhất
     selected_thread_id, thread_messages = valid_threads[0]
+
     filtered_messages = filter_original_messages(thread_messages)
+    # Nếu không lọc được message gốc -> coi như thread mới
     if not filtered_messages:
-        return None, None, None
+        message = create_message_with_attachment(
+            to_email, cc_email, subject, message_text,
+            attachment_data, attachment_name
+        )
+        sent = send_message(service, "me", message)
+        return sent, subject, subject, "new_thread"
+
     last_message = filtered_messages[-1]
     message_id_header = last_message['message_id']
     references_header = get_header_value(last_message['headers'], 'References')
-    new_references = f"{references_header} {message_id_header}" if references_header and message_id_header else message_id_header
-    message = create_message_with_attachment(to_email, cc_email, subject, message_text, attachment_data, attachment_name, message_id_header, new_references)
+    if references_header and message_id_header:
+        new_references = f"{references_header} {message_id_header}"
+    else:
+        new_references = message_id_header
+
+    # Tạo message reply + giữ threadId
+    message = create_message_with_attachment(
+        to_email, cc_email, subject, message_text,
+        attachment_data, attachment_name,
+        in_reply_to=message_id_header,
+        references=new_references
+    )
     sent = send_message(service, "me", message, thread_id=selected_thread_id)
-    return sent, last_message['subject'], subject
+    return sent, last_message['subject'], subject, "reply_thread"
 
 def format_datetime(dt_str):
     try:
@@ -345,7 +402,7 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
             attachment_data = download_excel_file(drive_service, email_data['file_link']) if email_data['file_link'] else None
             attachment_name = f"{email_data['hub']}.xlsx"
             
-            sent, original_subject, current_subject = send_email_smart_reply(
+            sent, original_subject, current_subject, mode = send_email_smart_reply(
                 service=gmail_service,
                 to_email=email_data['recipient'],
                 cc_email=email_data['cc'],
@@ -354,8 +411,15 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
                 attachment_data=attachment_data,
                 attachment_name=attachment_name
             )
-            
-            subject_status = "Subject OK" if current_subject == original_subject else "Subject Wrong"
+
+            # Map mode -> Status hiển thị trong sheet
+            if mode == "reply_thread":
+                subject_status = "Reply vào thread đã có"
+            elif mode == "new_thread":
+                subject_status = "Tạo thread mới"
+            else:
+                # fallback, phòng sau này có mode khác
+                subject_status = f"Khác: {mode}"
             
             extended_row = list(email_data['original_row_data']) + [str(original_subject), str(subject_status)]
             rows_to_add.append(extended_row)
