@@ -414,9 +414,9 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
 
             # Map mode -> Status hiển thị trong sheet
             if mode == "reply_thread":
-                subject_status = "Reply vào thread đã có"
+                subject_status = "Reply vào luồng mail đã có"
             elif mode == "new_thread":
-                subject_status = "Tạo thread mới"
+                subject_status = "Tạo luồng mail mới"
             else:
                 # fallback, phòng sau này có mode khác
                 subject_status = f"Khác: {mode}"
