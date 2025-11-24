@@ -141,10 +141,10 @@ def batch_format_send_email_sheet(sheets_service, start_row, status_list):
         format_requests = []
         for i, status in enumerate(status_list):
             # Chọn màu theo Status
-            if status == "Reply vào thread đã có":
+            if status == "Reply vào luồng mail đã có":
                 # xanh lá nhạt
                 color = {"red": 0.8, "green": 0.94, "blue": 0.8}
-            elif status == "Tạo thread mới":
+            elif status == "Tạo luồng mail mới":
                 # vàng nhạt
                 color = {"red": 1.0, "green": 0.95, "blue": 0.8}
             elif status == "Lỗi khi gửi mail":
