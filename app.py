@@ -135,7 +135,6 @@ def _render_soc_page(soc: str):
         soc_name=SOC_CONFIG[soc]["name"],
     )
 
-
 # --- Bắt Đầu Đăng Nhập ---
 @app.route("/login")
 def login():

@@ -10,49 +10,56 @@
 </head>
 
 <body data-email="{{ email }}">
-  <div class="container">
+  <div class="container lanterns">
+    <div class="lantern left"></div>
+    <div class="lantern right"></div>
+
     <div class="header">
       <i class="fas fa-user-shield"></i>
-      <h1>Admin - Force Unlock</h1>
-    </div>
-
-    <div style="text-align:right; margin-bottom: 10px;">
-      <p>
-        Xin chào: <strong>{{ email }}</strong> -
-        <a href="/">Home</a> -
-        <a href="/logout">Đăng xuất</a>
-      </p>
+      <h1>Admin</h1>
+      <div class="tet-badge">
+        <i class="fas fa-lock-open"></i>
+        <span>Force unlock</span>
+      </div>
     </div>
 
     <div class="main-content">
       <div class="status-panel">
         <div class="status-header">
           <i class="fas fa-lock"></i>
-          <span>Trạng thái Locks</span>
+          <span>Locks theo SOC</span>
+          <span style="margin-left:auto; font-weight:900;">
+            <a href="/">Home</a> · <a href="/logout">Đăng xuất</a>
+          </span>
         </div>
 
-        <div style="padding:16px;">
-          {% for soc, cfg in soc_config.items() %}
-            <div style="border:1px solid #eee; border-radius:12px; padding:14px; margin-bottom:12px;">
-              <h3 style="margin:0 0 8px;">{{ cfg.name }} ({{ soc }})</h3>
-              <div>Running: <b>{{ locks[soc].running }}</b></div>
-              <div>By: <b>{{ locks[soc].by }}</b></div>
-              <div>Message: {{ locks[soc].message }}</div>
+        <div class="info-box" style="margin-top:0;">
+          <h4><i class="fas fa-circle-info"></i> Lưu ý</h4>
+          <ul>
+            <li>Chỉ dùng Force unlock khi lock bị kẹt do crash hoặc bị treo.</li>
+            <li>Force unlock sẽ mở khoá ngay lập tức cho SOC tương ứng.</li>
+          </ul>
+        </div>
 
-              <div style="margin-top:10px;">
-                <button class="btn-primary" onclick="forceUnlock('{{ soc }}')">
-                  Force unlock
-                </button>
+        <div class="home-grid" style="margin-top:14px;">
+          {% for soc, cfg in soc_config.items() %}
+            <div class="soc-card">
+              <h3><i class="fas fa-warehouse"></i> {{ cfg.name }} ({{ soc }})</h3>
+              <div class="soc-meta">
+                Running: <b>{{ locks[soc].running }}</b><br/>
+                By: <b>{{ locks[soc].by }}</b><br/>
+                Message: {{ locks[soc].message }}
               </div>
+              <button class="btn-primary" onclick="forceUnlock('{{ soc }}')">
+                <i class="fas fa-unlock"></i><span>Force unlock</span>
+              </button>
             </div>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <div class="footer">
-      <p>&copy; 2025 Email Automation System.</p>
-    </div>
+    <div class="footer"><p>&copy; 2025</p></div>
   </div>
 
   <script>
