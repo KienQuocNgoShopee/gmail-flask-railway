@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,6 +16,7 @@
     <div class="lantern right"></div>
 
     <div class="header">
+      <img class="spx-logo" src="{{ url_for('static', filename='img/spx-express.png') }}" alt="SPX Express">
       <i class="fas fa-user-shield"></i>
       <h1>Admin</h1>
       <div class="tet-badge">
@@ -43,23 +45,25 @@
 
         <div class="home-grid" style="margin-top:14px;">
           {% for soc, cfg in soc_config.items() %}
-            <div class="soc-card">
-              <h3><i class="fas fa-warehouse"></i> {{ cfg.name }} ({{ soc }})</h3>
-              <div class="soc-meta">
-                Running: <b>{{ locks[soc].running }}</b><br/>
-                By: <b>{{ locks[soc].by }}</b><br/>
-                Message: {{ locks[soc].message }}
-              </div>
-              <button class="btn-primary" onclick="forceUnlock('{{ soc }}')">
-                <i class="fas fa-unlock"></i><span>Force unlock</span>
-              </button>
+          <div class="soc-card">
+            <h3><i class="fas fa-warehouse"></i> {{ cfg.name }} </h3>
+            <div class="soc-meta">
+              Running: <b>{{ locks[soc].running }}</b><br />
+              By: <b>{{ locks[soc].by }}</b><br />
+              Message: {{ locks[soc].message }}
             </div>
+            <button class="btn-primary" onclick="forceUnlock('{{ soc }}')">
+              <i class="fas fa-unlock"></i><span>Force unlock</span>
+            </button>
+          </div>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <div class="footer"><p>&copy; 2025</p></div>
+    <div class="footer">
+      <p>&copy; 2025</p>
+    </div>
   </div>
 
   <script>
@@ -79,4 +83,5 @@
     }
   </script>
 </body>
+
 </html>

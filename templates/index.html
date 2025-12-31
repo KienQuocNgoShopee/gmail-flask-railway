@@ -1,91 +1,89 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home - Email Automation</title>
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home - Email Automation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body data-email="{{ email }}">
-  <div class="container lanterns">
-    <div class="lantern left"></div>
-    <div class="lantern right"></div>
+    <div class="container lanterns">
+        <div class="lantern left"></div>
+        <div class="lantern right"></div>
 
-    <div class="header">
-      <i class="fas fa-envelope-open-text"></i>
-      <h1>Email Automation System</h1>
-      <div class="tet-badge">
-        <i class="fas fa-sparkles"></i>
-        <span>Mai vàng rực rỡ</span>
-      </div>
-    </div>
-
-    <div class="main-content">
-      <div class="status-panel">
-        <div class="status-header">
-          <i class="fas fa-house"></i>
-          <span>Home</span>
-          <span style="margin-left:auto; font-weight:900;">
-            {{ email }} · <a href="/logout">Đăng xuất</a> · <a href="/admin">Admin</a>
-          </span>
-        </div>
-
-        <div class="info-box" style="margin-top:0;">
-          <h4><i class="fas fa-gift"></i> Lời chúc Tết</h4>
-          <p id="tetWish" style="font-weight:900; color:#6A0E18;"></p>
-        </div>
-
-        <div class="home-grid" style="margin-top:14px;">
-          <div class="soc-card">
-            <h3><i class="fas fa-warehouse"></i> BD A Mega SOC</h3>
-            <div class="soc-meta">
-              Gửi mail theo tab <b>Output</b>, lưu lịch sử ở <b>send_email</b>.
+        <div class="header">
+            <img class="spx-logo" src="{{ url_for('static', filename='img/spx-express.png') }}" alt="SPX Express">
+            <i class="fas fa-envelope-open-text"></i>
+            <h1>Email Automation System</h1>
+            <div class="tet-badge">
+                <i class="fas fa-sparkles"></i>
+                <span>Mai vàng rực rỡ</span>
             </div>
-            <a class="btn-primary" href="/bda">
-              <i class="fas fa-arrow-right"></i><span>Vào BD A</span>
-            </a>
-          </div>
+        </div>
 
-          <div class="soc-card">
-            <h3><i class="fas fa-warehouse"></i> BD B Mega SOC</h3>
-            <div class="soc-meta">
-              Luồng y chang BD A, dùng chung login/token Firestore.
+        <div class="main-content">
+            <div class="status-panel">
+                <div class="status-header">
+                    <i class="fas fa-house"></i>
+                    <span>Home</span>
+                    <span style="margin-left:auto; font-weight:900;">
+                        {{ email }} · <a href="/logout">Đăng xuất</a> · <a href="/admin">Admin</a>
+                    </span>
+                </div>
+
+                <div class="info-box" style="margin-top:0;">
+                    <p id="tetWish" style="font-weight:900; color:#0B4B57;"></p>
+                </div>
+
+                <div class="home-grid" style="margin-top:14px;">
+                    <div class="soc-card">
+                        <h3><i class="fas fa-warehouse"></i> BD A Mega SOC</h3>
+                        <a class="btn-primary" href="/bda">
+                            <i class="fas fa-arrow-right"></i><span>Vào BD A</span>
+                        </a>
+                    </div>
+
+                    <div class="soc-card">
+                        <h3><i class="fas fa-warehouse"></i> BD B Mega SOC</h3>
+                        <a class="btn-primary" href="/bdb">
+                            <i class="fas fa-arrow-right"></i><span>Vào BD B</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4><i class="fas fa-lightbulb"></i> Hướng dẫn nhanh</h4>
+                    <ul>
+                        <li>Chọn SOC → vào trang SOC để gửi mail hoặc theo dõi trạng thái.</li>
+                        <li>Nếu thấy <b>Running by ...</b> thì bạn vẫn vào xem được, nhưng <b>nút Run sẽ bị khoá</b>.
+                        </li>
+                        <li>Nếu Website có bất cứ vấn đề gì. Liên hệ SeaTalk: <i><s>kienquoc.ngo@spxexpress.com</s></i>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <a class="btn-primary" href="/bdb">
-              <i class="fas fa-arrow-right"></i><span>Vào BD B</span>
-            </a>
-          </div>
         </div>
 
-        <div class="info-box">
-          <h4><i class="fas fa-lightbulb"></i> Hướng dẫn nhanh</h4>
-          <ul>
-            <li>Chọn SOC → vào trang SOC để gửi mail hoặc theo dõi trạng thái.</li>
-            <li>Nếu thấy <b>Running by ...</b> thì bạn vẫn vào xem được, nhưng <b>nút Run sẽ bị khoá</b>.</li>
-            <li>Nếu bị kẹt “Running” do crash, admin dùng <b>Force unlock</b>.</li>
-          </ul>
+        <div class="footer">
+            <p>&copy; 2025 Email Automation System · Happy Tết 🧧</p>
         </div>
-      </div>
     </div>
 
-    <div class="footer">
-      <p>&copy; 2025 Email Automation System · Happy Tết 🧧</p>
-    </div>
-  </div>
-
-  <script>
-    const wishes = [
-      "Chúc năm mới bình an, chạy job phát ăn ngay ✨",
-      "Mai vàng nở rộ, mail đi vù vù 🧧",
-      "Tết đến rồi, KPI mượt như mơ 🎉",
-      "Chạy ít lỗi, log ít đỏ, ngủ ngon 😄",
-      "Đầu năm thuận lợi, cuối năm rực rỡ 🌼"
-    ];
-    const el = document.getElementById("tetWish");
-    if (el) el.innerText = wishes[Math.floor(Math.random() * wishes.length)];
-  </script>
+    <script>
+        const wishes = [
+            "Chúc năm mới bình an, chạy job phát ăn ngay ✨",
+            "Mai vàng nở rộ, mail đi vù vù 🧧",
+            "Tết đến rồi, KPI mượt như mơ 🎉",
+            "Chạy ít lỗi, log ít đỏ, ngủ ngon 😄",
+            "Đầu năm thuận lợi, cuối năm rực rỡ 🌼"
+        ];
+        const el = document.getElementById("tetWish");
+        if (el) el.innerText = wishes[Math.floor(Math.random() * wishes.length)];
+    </script>
 </body>
+
 </html>
