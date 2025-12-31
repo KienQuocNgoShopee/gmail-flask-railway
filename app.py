@@ -106,6 +106,35 @@ def index():
             return redirect("/login")
     return redirect("/login")
 
+@app.route("/bda")
+def page_bda():
+    return _render_soc_page("bda")
+
+@app.route("/bdb")
+def page_bdb():
+    return _render_soc_page("bdb")
+
+def _render_soc_page(soc: str):
+    soc = (soc or "").lower()
+    if soc not in SOC_CONFIG:
+        return "Not found", 404
+
+    if "user_email" not in session:
+        return redirect("/login")
+
+    user_email = session["user_email"]
+    doc = db.collection("users").document(user_email).get()
+    if not doc.exists:
+        session.clear()
+        return redirect("/login")
+
+    return render_template(
+        "mail.html",
+        email=user_email,
+        soc=soc,
+        soc_name=SOC_CONFIG[soc]["name"],
+    )
+
 
 # --- Bắt Đầu Đăng Nhập ---
 @app.route("/login")
