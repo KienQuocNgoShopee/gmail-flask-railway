@@ -18,10 +18,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.readonly'
 ]
 
-_sheet_metadata_cache = None
-
-SHEET_ID = "1pLGWEeKRL57_36IUJWzHN2IzuanpL8jMZVhMdeHXLiw"
-#1sEoD3mA_6edR2zvssTAXR2DoJiMnTQhYuoHOg1j2fes
+_sheet_metadata_cache = {}
 
 def get_google_services(user_email):
     db = firestore.client()
@@ -36,19 +33,21 @@ def get_google_services(user_email):
         build('drive', 'v3', credentials=creds)
     )
 
-def get_sheet_metadata(sheets_service):
+def get_sheet_metadata(sheets_service, spreadsheet_id):
     global _sheet_metadata_cache
-    if _sheet_metadata_cache is None:
+    if spreadsheet_id not in _sheet_metadata_cache:
         try:
-            _sheet_metadata_cache = sheets_service.spreadsheets().get(spreadsheetId=SHEET_ID).execute()
+            _sheet_metadata_cache[spreadsheet_id] = sheets_service.spreadsheets().get(
+                spreadsheetId=spreadsheet_id
+            ).execute()
         except Exception as e:
             print(f"❌ get_sheet_metadata error: {e}")
             return None
-    return _sheet_metadata_cache
+    return _sheet_metadata_cache.get(spreadsheet_id)
 
-def get_sheet_id_by_name(sheets_service, sheet_name):
+def get_sheet_id_by_name(sheets_service, spreadsheet_id, sheet_name):
     try:
-        spreadsheet = get_sheet_metadata(sheets_service)
+        spreadsheet = get_sheet_metadata(sheets_service, spreadsheet_id)
         if spreadsheet:
             for sheet in spreadsheet.get('sheets', []):
                 if sheet['properties']['title'] == sheet_name:
@@ -72,12 +71,12 @@ def safe_batch_update(service, spreadsheet_id, body, retries=3):
             else:
                 raise e
 
-def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3):
+def batch_delete_rows_from_output_sheet(sheets_service, spreadsheet_id, row_indices, start_row=3, sheet_name="Output"):
     try:
         if not row_indices:
             return True
             
-        output_sheet_id = get_sheet_id_by_name(sheets_service, "Output")
+        output_sheet_id = get_sheet_id_by_name(sheets_service, spreadsheet_id, sheet_name)
         if output_sheet_id is None:
             return False
 
@@ -99,7 +98,7 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
 
         if delete_requests:
             batch_request = {"requests": delete_requests}
-            safe_batch_update(sheets_service, SHEET_ID, batch_request)
+            safe_batch_update(sheets_service, spreadsheet_id, batch_request)
 
         
         return True
@@ -107,34 +106,26 @@ def batch_delete_rows_from_output_sheet(sheets_service, row_indices, start_row=3
         print(f"❌ batch_delete_rows_from_output_sheet error: {e}")
         return False
 
-def batch_move_to_send_email_sheet(sheets_service, rows_data):
+def batch_move_to_send_email_sheet(sheets_service, spreadsheet_id, rows_data, send_sheet_name="send_email"):
+    spreadsheet = get_sheet_metadata(sheets_service, spreadsheet_id)
+
+    if send_sheet_name not in [s['properties']['title'] for s in spreadsheet.get('sheets', [])]:
+        create_sheet_request = {"requests": [{"addSheet": {"properties": {"title": send_sheet_name}}}]}
+        sheets_service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=create_sheet_request).execute()
+        _sheet_metadata_cache.pop(spreadsheet_id, None)
+
+    if rows_data:
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=spreadsheet_id,
+            range=f"{send_sheet_name}!A:N",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body={"values": rows_data}
+        ).execute()
+
+def batch_format_send_email_sheet(sheets_service, spreadsheet_id, start_row, status_list, send_sheet_name="send_email"):
     try:
-        spreadsheet = get_sheet_metadata(sheets_service)
-        if "send_email" not in [s['properties']['title'] for s in spreadsheet.get('sheets', [])]:
-            create_sheet_request = {
-                "requests": [{"addSheet": {"properties": {"title": "send_email"}}}]
-            }
-            sheets_service.spreadsheets().batchUpdate(spreadsheetId=SHEET_ID, body=create_sheet_request).execute()
-            global _sheet_metadata_cache
-            _sheet_metadata_cache = None
-
-        if rows_data:
-            sheets_service.spreadsheets().values().append(
-                spreadsheetId=SHEET_ID,
-                range="send_email!A:N",
-                valueInputOption="USER_ENTERED",
-                insertDataOption="INSERT_ROWS",
-                body={"values": rows_data}
-            ).execute()
-
-        return True
-    except Exception as e:
-        print(f"❌ batch_move_to_send_email_sheet error: {e}")
-        return False
-
-def batch_format_send_email_sheet(sheets_service, start_row, status_list):
-    try:
-        sheet_id = get_sheet_id_by_name(sheets_service, "send_email")
+        sheet_id = get_sheet_id_by_name(sheets_service, spreadsheet_id, send_sheet_name)
         if sheet_id is None:
             return True
 
@@ -175,7 +166,7 @@ def batch_format_send_email_sheet(sheets_service, start_row, status_list):
 
         if format_requests:
             batch_request = {"requests": format_requests}
-            safe_batch_update(sheets_service, SHEET_ID, batch_request)
+            safe_batch_update(sheets_service, spreadsheet_id, batch_request)
         
         return True
     except Exception as e:
@@ -388,7 +379,7 @@ def format_datetime(dt_str):
 
     return dt.strftime("%d/%m/%Y %H:%M:%S")
 
-def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service):
+def process_email_batch(email_data_list, drive_service, sheets_service, gmail_service, spreadsheet_id, send_sheet_name="send_email", output_sheet_name="Output", start_row=3):
     results = []
     rows_to_delete = []
     rows_to_add = []
@@ -434,28 +425,29 @@ def process_email_batch(email_data_list, drive_service, sheets_service, gmail_se
     if rows_to_add:
         try:
             current_rows = len(sheets_service.spreadsheets().values().get(
-                spreadsheetId=SHEET_ID,
-                range="send_email!A:A"
+                spreadsheetId=spreadsheet_id,
+                range=f"{send_sheet_name}!A:A"
             ).execute().get('values', []))
             start_format_row = current_rows + 1
         except:
             start_format_row = 1
         
-        batch_move_to_send_email_sheet(sheets_service, rows_to_add)
-        batch_format_send_email_sheet(sheets_service, start_format_row, status_list)
+        batch_move_to_send_email_sheet(sheets_service, spreadsheet_id, rows_to_add, send_sheet_name)
+        batch_format_send_email_sheet(sheets_service, spreadsheet_id, start_format_row, status_list, send_sheet_name)
     
-    batch_delete_rows_from_output_sheet(sheets_service, rows_to_delete)
+    batch_delete_rows_from_output_sheet(sheets_service, spreadsheet_id, rows_to_delete, start_row, output_sheet_name)
     
     print(f"✅ Processed {len(email_data_list)} emails, deleted {len(rows_to_delete)} rows.")
     return results
 
-def main(user_email):
-    SHEET_NAME = "Output"
-    START_ROW = 3
-    
+def main(user_email: str, spreadsheet_id: str):
     gmail_service, sheets_service, drive_service = get_google_services(user_email)
 
-    sheet_data = get_sheet_data(sheets_service, SHEET_ID, SHEET_NAME, START_ROW)
+    OUTPUT_SHEET = "Output"
+    SEND_SHEET = "send_email"
+    START_ROW = 3
+
+    sheet_data = get_sheet_data(sheets_service, spreadsheet_id, OUTPUT_SHEET, START_ROW)
     if not sheet_data:
         print("⚠️ Không có dữ liệu cần gửi.")
         return
@@ -465,7 +457,19 @@ def main(user_email):
         print("⚠️ Không có dòng nào được đánh dấu gửi.")
         return
 
-    process_email_batch(email_data_list, drive_service, sheets_service, gmail_service)
+    # optional: giới hạn 10 mail (đúng note UI)
+    email_data_list = email_data_list[:10]
+
+    process_email_batch(
+        email_data_list,
+        drive_service,
+        sheets_service,
+        gmail_service,
+        spreadsheet_id=spreadsheet_id,
+        send_sheet_name=SEND_SHEET,
+        output_sheet_name=OUTPUT_SHEET,
+        start_row=START_ROW,
+    )
 
 if __name__ == "__main__":
-    main()
+    print("This module is intended to be called from app.py with main(user_email, spreadsheet_id).")

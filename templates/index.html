@@ -1,62 +1,62 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Automation System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home - Email Automation System</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body data-email="{{ email }}">
-    <div class="container">
-        <div class="header">
-            <i class="fas fa-envelope-open-text"></i>
-            <h1>Email Automation System</h1>
-        </div>
-        
-        <div style="text-align: right; margin-bottom: 10px;">
-            <p>Xin chào: <strong>{{ email }}</strong> - <a href="/logout">Đăng xuất</a></p>
+  <div class="container">
+    <div class="header">
+      <i class="fas fa-envelope-open-text"></i>
+      <h1>Email Automation System</h1>
+    </div>
+
+    <div style="text-align:right; margin-bottom: 12px;">
+      <p>Xin chào: <strong>{{ email }}</strong> - <a href="/logout">Đăng xuất</a></p>
+    </div>
+
+    <div class="main-content">
+      <div class="status-panel">
+        <div class="status-header">
+          <i class="fas fa-building"></i>
+          <span>Chọn SOC để thao tác</span>
         </div>
 
-        <div class="main-content">
-            <div class="control-panel">
-                <button id="sendBtn" class="btn-primary" onclick="sendEmails()">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>Chạy gửi mail</span>
-                </button>
-            </div>
-            
-            <div class="status-panel">
-                <div class="status-header">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Trạng thái hệ thống</span>
-                </div>
-                <div id="status-content">
-                    <div id="status-indicator" class="status-indicator idle">
-                        <div class="status-dot"></div>
-                        <span id="result">Chưa chạy</span>
-                    </div>
-                    <div id="progress-bar" class="progress-bar hidden">
-                        <div class="progress-fill"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="info-panel">
-                <h3><i class="fas fa-lightbulb"></i> Lưu ý</h3>
-                <ul>
-                    <li>Chỉ được chọn và gửi tối đa 10 mail mỗi lần để tránh TimeOut</li>
-                    <li>Người gửi hiện tại: {{ email }}</li>
-                    <li>Bạn có thể xem nhật ký lỗi tại <a href="/log" target="_blank">đây</a></li>
-                </ul>
-            </div>
+        <div style="display:flex; gap:12px; justify-content:center; padding: 16px;">
+          <a class="btn-primary" href="/bda">
+            <i class="fas fa-warehouse"></i>
+            <span>BD A Mega SOC</span>
+          </a>
+
+          <a class="btn-primary" href="/bdb">
+            <i class="fas fa-warehouse"></i>
+            <span>BD B Mega SOC</span>
+          </a>
+
+          <a class="btn-primary" href="/admin">
+            <i class="fas fa-user-shield"></i>
+            <span>Admin</span>
+          </a>
         </div>
-        
-        <div class="footer">
-            <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
+
+        <div class="info-box" style="margin: 0 16px 16px;">
+          <h4><i class="fas fa-info-circle"></i> Ghi chú</h4>
+          <ul>
+            <li>Vào từng SOC để gửi mail và xem trạng thái riêng.</li>
+            <li>Nếu bị kẹt trạng thái “Running” do crash, admin dùng Force unlock.</li>
+          </ul>
         </div>
+      </div>
     </div>
-    
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <div class="footer">
+      <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
+    </div>
+  </div>
 </body>
 </html>

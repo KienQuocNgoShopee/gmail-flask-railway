@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Force Unlock</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body data-email="{{ email }}">
+  <div class="container">
+    <div class="header">
+      <i class="fas fa-user-shield"></i>
+      <h1>Admin - Force Unlock</h1>
+    </div>
+
+    <div style="text-align:right; margin-bottom: 10px;">
+      <p>
+        Xin chào: <strong>{{ email }}</strong> -
+        <a href="/">Home</a> -
+        <a href="/logout">Đăng xuất</a>
+      </p>
+    </div>
+
+    <div class="main-content">
+      <div class="status-panel">
+        <div class="status-header">
+          <i class="fas fa-lock"></i>
+          <span>Trạng thái Locks</span>
+        </div>
+
+        <div style="padding:16px;">
+          {% for soc, cfg in soc_config.items() %}
+            <div style="border:1px solid #eee; border-radius:12px; padding:14px; margin-bottom:12px;">
+              <h3 style="margin:0 0 8px;">{{ cfg.name }} ({{ soc }})</h3>
+              <div>Running: <b>{{ locks[soc].running }}</b></div>
+              <div>By: <b>{{ locks[soc].by }}</b></div>
+              <div>Message: {{ locks[soc].message }}</div>
+
+              <div style="margin-top:10px;">
+                <button class="btn-primary" onclick="forceUnlock('{{ soc }}')">
+                  Force unlock
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>&copy; 2025 Email Automation System.</p>
+    </div>
+  </div>
+
+  <script>
+    async function forceUnlock(soc) {
+      try {
+        const res = await fetch("/force-unlock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ soc })
+        });
+        const data = await res.json();
+        alert(data.message || JSON.stringify(data));
+        location.reload();
+      } catch (e) {
+        alert("Force unlock lỗi: " + e.message);
+      }
+    }
+  </script>
+</body>
+</html>

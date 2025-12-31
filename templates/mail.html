@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ soc_name }} - Email Automation System</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body data-email="{{ email }}">
+    <script>
+        window.SOC = "{{ soc }}";          // "bda" hoặc "bdb"
+        window.SOC_NAME = "{{ soc_name }}";
+    </script>
+
+    <div class="container">
+        <div class="header">
+            <i class="fas fa-paper-plane"></i>
+            <h1>{{ soc_name }}</h1>
+        </div>
+
+        <div style="text-align:right; margin-bottom: 10px;">
+            <p>
+                Xin chào: <strong>{{ email }}</strong> -
+                <a href="/">Home</a> -
+                <a href="/logout">Đăng xuất</a>
+            </p>
+        </div>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <button id="sendBtn" class="btn-primary" onclick="sendEmails()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Chạy gửi mail</span>
+                </button>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-header">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Trạng thái hệ thống</span>
+                </div>
+
+                <div id="status-content">
+                    <div id="status-indicator" class="status-indicator idle">
+                        <div class="status-dot"></div>
+                        <span id="result">Chưa chạy</span>
+                    </div>
+
+                    <!-- progress bar (JS sẽ ẩn/hiện) -->
+                    <div id="progress-bar" class="progress-bar hidden">
+                        <div class="progress-fill"></div>
+                    </div>
+
+                    <div class="info-box">
+                        <h4><i class="fas fa-info-circle"></i> Lưu ý</h4>
+                        <ul>
+                            <li>Hệ thống sẽ gửi các dòng TRUE trong tab <b>Output</b>.</li>
+                            <li>Bạn có thể xem nhật ký lỗi tại <a href="/log" target="_blank">đây</a>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Email Automation System. Made with <i class="fas fa-heart"></i></p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>

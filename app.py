@@ -24,6 +24,63 @@ cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+ADMIN_EMAIL = "danthi.nguyen@spxexpress.com"
+
+SOC_CONFIG = {
+    "bda": {
+        "name": "BD A Mega SOC",
+        "sheet_id": "1pLGWEeKRL57_36IUJWzHN2IzuanpL8jMZVhMdeHXLiw",
+    },
+    "bdb": {
+        "name": "BD B Mega SOC",
+        "sheet_id": "1OKJOftAkcmTtmO1w08V9sI1D3TWFusZP77SUfMpGSsM",
+    },
+}
+
+def lock_ref(soc: str):
+    return db.collection("locks").document(soc)
+
+def read_lock(soc: str):
+    doc = lock_ref(soc).get()
+    if not doc.exists:
+        return {"running": False, "message": "Chưa chạy", "by": None}
+    d = doc.to_dict() or {}
+    return {
+        "running": bool(d.get("is_running", False)),
+        "message": d.get("message", "Chưa chạy"),
+        "by": d.get("by"),
+    }
+
+def acquire_lock(soc: str, user_email: str):
+    ref = lock_ref(soc)
+
+    @firestore.transactional
+    def _txn(txn):
+        snap = ref.get(transaction=txn)
+        if snap.exists:
+            d = snap.to_dict() or {}
+            if d.get("is_running") and d.get("by") != user_email:
+                return False, d.get("by"), d.get("message")
+        txn.set(ref, {
+            "is_running": True,
+            "by": user_email,
+            "message": "Đang khởi tạo...",
+            "started_at": firestore.SERVER_TIMESTAMP
+        }, merge=True)
+        return True, None, None
+
+    tx = db.transaction()
+    return _txn(tx)
+
+def release_lock(soc: str, message: str = "Đã hoàn thành"):
+    lock_ref(soc).set({
+        "is_running": False,
+        "message": message,
+        "by": None,
+        "finished_at": firestore.SERVER_TIMESTAMP
+    }, merge=True)
+
+
 # --- GOOGLE OAUTH SCOPES ---
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.send",
@@ -35,13 +92,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "openid"
 ]
-
-# --- TRẠNG THÁI ---
-status = {
-    "running": False,
-    "message": "Chưa chạy",
-    "by": None
-}
 
 # --- TRANG CHỦ ---
 @app.route("/")
@@ -120,11 +170,10 @@ def oauth2callback():
 # --- API CHECK TRẠNG THÁI ---
 @app.route("/status")
 def check_status():
-    return jsonify({
-        "running": status["running"],
-        "message": status["message"],
-        "by": status["by"]
-    })
+    soc = request.args.get("soc", "").lower()
+    if soc not in SOC_CONFIG:
+        return jsonify({"error": "Unknown soc"}), 400
+    return jsonify(read_lock(soc))
 
 # --- API CHECK LOG ---
 @app.route("/log")
@@ -144,45 +193,31 @@ def run_batch():
         return jsonify({"status": "error", "message": "Chưa đăng nhập"}), 401
 
     user_email = session["user_email"]
-
     user_doc = db.collection("users").document(user_email).get()
     if not user_doc.exists:
         session.clear()
         return jsonify({"status": "error", "message": "Token đã bị xoá. Vui lòng đăng nhập lại."}), 401
 
-    if status["running"] and status.get("by") != user_email:
-        return jsonify({
-            "status": "busy",
-            "message": f"Đang có người khác gửi: {status['by']}"
-        })
+    payload = request.get_json(silent=True) or {}
+    soc = (payload.get("soc") or "").lower()
+    if soc not in SOC_CONFIG:
+        return jsonify({"status": "error", "message": f"Unknown soc: {soc}"}), 400
+
+    ok, by, _ = acquire_lock(soc, user_email)
+    if not ok:
+        return jsonify({"status": "busy", "message": f"Đang có người khác gửi: {by}", "by": by}), 409
+
+    spreadsheet_id = SOC_CONFIG[soc]["sheet_id"]
 
     def task():
-        original_stdout = sys.stdout
-
         try:
-            status["running"] = True
-            status["by"] = user_email
-            status["message"] = "Đang gửi email..."
-
-            sys.stdout = open("app.log", "a", encoding="utf-8") 
-            run_main(user_email)
-            sys.stdout.close()
-
-            status["message"] = "Đã hoàn thành"
-
+            lock_ref(soc).set({"message": "Đang gửi email..."}, merge=True)
+            run_main(user_email, spreadsheet_id)   # <-- main.py mới
+            release_lock(soc, "Đã hoàn thành")
         except Exception as e:
-            sys.stdout.close()
-            if "invalid_grant" in str(e) or "unauthorized" in str(e).lower():
-                status["message"] = "⚠️ Token không hợp lệ. Vui lòng đăng nhập lại."
-            else:
-                status["message"] = f"Lỗi: {e}"
-        finally:
-            sys.stdout = original_stdout
-            status["running"] = False
-            status["by"] = None
+            release_lock(soc, f"Lỗi: {e}")
 
-
-    threading.Thread(target=task).start()
+    threading.Thread(target=task, daemon=True).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})
 
 # --- LOGOUT ---
@@ -194,6 +229,32 @@ def logout():
 @app.route("/healthz")
 def healthz():
     return "OK", 200
+
+@app.route("/admin")
+def admin():
+    if "user_email" not in session:
+        return redirect("/login")
+    if session["user_email"].lower() != ADMIN_EMAIL.lower():
+        return "Forbidden", 403
+
+    locks = {soc: read_lock(soc) for soc in SOC_CONFIG.keys()}
+    return render_template("admin.html", email=session["user_email"], locks=locks, soc_config=SOC_CONFIG)
+
+@app.route("/force-unlock", methods=["POST"])
+def force_unlock():
+    if "user_email" not in session:
+        return jsonify({"status": "error", "message": "Chưa đăng nhập"}), 401
+    if session["user_email"].lower() != ADMIN_EMAIL.lower():
+        return jsonify({"status": "error", "message": "Forbidden"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    soc = (payload.get("soc") or "").lower()
+    if soc not in SOC_CONFIG:
+        return jsonify({"status": "error", "message": f"Unknown soc: {soc}"}), 400
+
+    release_lock(soc, "Force unlocked by admin")
+    return jsonify({"status": "ok", "message": f"Unlocked {soc}"})
+
 
 if __name__ == "__main__":
     app.run(debug=False)
