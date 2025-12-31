@@ -10,6 +10,39 @@ from main import main as run_main
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import sys
+from pathlib import Path
+
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+def log_path(soc: str) -> Path:
+    return LOG_DIR / f"{soc}.log"
+
+_thread_local = threading.local()
+_ORIGINAL_STDOUT = sys.stdout
+
+class StdoutRouter:
+    def __init__(self, fallback):
+        self.fallback = fallback
+
+    def write(self, s):
+        fp = getattr(_thread_local, "log_fp", None)
+        if fp:
+            fp.write(s)
+            fp.flush()
+        else:
+            self.fallback.write(s)
+            self.fallback.flush()
+
+    def flush(self):
+        fp = getattr(_thread_local, "log_fp", None)
+        if fp:
+            fp.flush()
+        self.fallback.flush()
+
+# Set 1 lần cho toàn app
+sys.stdout = StdoutRouter(_ORIGINAL_STDOUT)
+
 
 
 app = Flask(__name__)
@@ -203,17 +236,6 @@ def check_status():
         return jsonify({"error": "Unknown soc"}), 400
     return jsonify(read_lock(soc))
 
-# --- API CHECK LOG ---
-@app.route("/log")
-def view_log():
-    try:
-        with open("app.log", "r", encoding="utf-8") as f:
-            log_content = f.read()
-    except Exception as e:
-        log_content = f"Lỗi khi đọc log: {e}"
-
-    return render_template("log.html", log=log_content)
-
 # --- API CHẠY Gửi MAIL ---
 @app.route("/run", methods=["POST"])
 def run_batch():
@@ -238,15 +260,48 @@ def run_batch():
     spreadsheet_id = SOC_CONFIG[soc]["sheet_id"]
 
     def task():
+        fp = open(log_path(soc), "a", encoding="utf-8")
+        _thread_local.log_fp = fp
         try:
             lock_ref(soc).set({"message": "Đang gửi email..."}, merge=True)
-            run_main(user_email, spreadsheet_id)   # <-- main.py mới
+
+            print("=" * 60)
+            print(f"START soc={soc} by={user_email}")
+            run_main(user_email, spreadsheet_id)
+            print(f"DONE soc={soc}")
+
             release_lock(soc, "Đã hoàn thành")
         except Exception as e:
+            print(f"ERROR soc={soc}: {e}")
             release_lock(soc, f"Lỗi: {e}")
+        finally:
+            fp.close()
+            _thread_local.log_fp = None
 
     threading.Thread(target=task, daemon=True).start()
     return jsonify({"status": "started", "message": "Đã bắt đầu gửi mail"})
+
+@app.route("/log-data")
+def log_data():
+    if "user_email" not in session:
+        return jsonify({"error": "unauthorized"}), 401
+
+    soc = request.args.get("soc", "").lower()
+    if soc not in SOC_CONFIG:
+        return jsonify({"error": "Unknown soc"}), 400
+
+    tail = int(request.args.get("tail", "300"))
+    tail = max(50, min(tail, 3000))  # clamp
+
+    p = log_path(soc)
+    if not p.exists():
+        return jsonify({"soc": soc, "text": ""})
+
+    try:
+        lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+        return jsonify({"soc": soc, "text": "\n".join(lines[-tail:])})
+    except Exception as e:
+        return jsonify({"soc": soc, "text": f"Lỗi đọc log: {e}"})
 
 # --- LOGOUT ---
 @app.route("/logout")

@@ -1,91 +1,112 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ soc_name }} - Email Automation</title>
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ soc_name }} - Email Automation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body data-email="{{ email }}">
-  <script>
-    window.SOC = "{{ soc }}";
-    window.SOC_NAME = "{{ soc_name }}";
-  </script>
+    <script>
+        window.SOC = "{{ soc }}";
+        window.SOC_NAME = "{{ soc_name }}";
+    </script>
 
-  <div class="container lanterns">
-    <div class="lantern left"></div>
-    <div class="lantern right"></div>
+    <div class="container lanterns">
+        <div class="lantern left"></div>
+        <div class="lantern right"></div>
 
-    <div class="header">
-      <i class="fas fa-paper-plane"></i>
-      <h1>{{ soc_name }}</h1>
-      <div class="tet-badge">
-        <i class="fas fa-sparkles"></i>
-        <span>Tết miền Nam 🧧</span>
-      </div>
+        <div class="header">
+            <i class="fas fa-paper-plane"></i>
+            <h1>{{ soc_name }}</h1>
+            <div class="tet-badge">
+                <i class="fas fa-sparkles"></i>
+                <span>Tết miền Nam 🧧</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="status-header">
+                    <i class="fas fa-user"></i>
+                    <span>{{ email }}</span>
+
+                    <span style="margin-left:auto; font-weight:900;">
+                        <a href="/">Home</a> · <a href="/logout">Đăng xuất</a>
+                    </span>
+                </div>
+
+                <button id="sendBtn" class="btn-primary" onclick="sendEmails()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Chạy gửi mail</span>
+                </button>
+
+                <div class="info-box">
+                    <h4><i class="fas fa-triangle-exclamation"></i> Ghi chú</h4>
+                    <ul>
+                        <li>Hệ thống gửi các dòng có <b>cột L = TRUE</b> trong tab <b>Output</b>.</li>
+                        <li>Mỗi lần gửi tối đa <b>10 mail</b> để tránh timeout.</li>
+                        <li>Sau khi gửi: dữ liệu được ghi sang tab <b>send_email</b> và dòng đã gửi sẽ bị xóa khỏi
+                            <b>Output</b>.</li>
+                        <li>Nếu đang hiển thị <b>Running by ...</b> bạn vẫn xem được trang, nhưng <b>nút Run sẽ bị
+                                khoá</b>.</li>
+                        <li>Xem log tại <a href="/log" target="_blank">Log</a> (hoặc báo admin nếu cần Force unlock).
+                        </li>
+                    </ul>
+                </div>
+                <div class="info-box">
+                    <h4><i class="fas fa-terminal"></i> Log hệ thống</h4>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                        <button class="btn-primary" type="button" onclick="refreshLog()">
+                            <i class="fas fa-rotate"></i><span>Refresh log</span>
+                        </button>
+
+                        <button class="btn-primary" type="button" onclick="clearLogUI()">
+                            <i class="fas fa-eraser"></i><span>Clear</span>
+                        </button>
+                    </div>
+
+                    <pre id="logBox" class="log-pre">(log sẽ hiện ở đây)</pre>
+                </div>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-header">
+                    <i class="fas fa-circle-info"></i>
+                    <span>Trạng thái</span>
+                </div>
+
+                <div id="status-indicator" class="status-indicator idle">
+                    <div class="status-dot"></div>
+                    <span id="result">Chưa chạy</span>
+                </div>
+
+                <div id="progress-bar" class="progress-bar hidden">
+                    <div class="progress-fill"></div>
+                </div>
+
+                <div class="info-box">
+                    <h4><i class="fas fa-heart"></i> Tip nhanh</h4>
+                    <ul>
+                        <li>Nếu bạn vừa vào trang và thấy nút Run bị khoá: chờ người khác chạy xong, nút sẽ tự bật lại.
+                        </li>
+                        <li>Đầu năm chạy mượt thì cuối năm KPI cũng mượt 😄</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 · {{ soc_name }} · Happy Tết 🌼</p>
+        </div>
     </div>
 
-    <div class="main-content">
-      <div class="control-panel">
-        <div class="status-header">
-          <i class="fas fa-user"></i>
-          <span>{{ email }}</span>
-
-          <span style="margin-left:auto; font-weight:900;">
-            <a href="/">Home</a> · <a href="/logout">Đăng xuất</a>
-          </span>
-        </div>
-
-        <button id="sendBtn" class="btn-primary" onclick="sendEmails()">
-          <i class="fas fa-paper-plane"></i>
-          <span>Chạy gửi mail</span>
-        </button>
-
-        <div class="info-box">
-          <h4><i class="fas fa-triangle-exclamation"></i> Ghi chú</h4>
-          <ul>
-            <li>Hệ thống gửi các dòng có <b>cột L = TRUE</b> trong tab <b>Output</b>.</li>
-            <li>Mỗi lần gửi tối đa <b>10 mail</b> để tránh timeout.</li>
-            <li>Sau khi gửi: dữ liệu được ghi sang tab <b>send_email</b> và dòng đã gửi sẽ bị xóa khỏi <b>Output</b>.</li>
-            <li>Nếu đang hiển thị <b>Running by ...</b> bạn vẫn xem được trang, nhưng <b>nút Run sẽ bị khoá</b>.</li>
-            <li>Xem log tại <a href="/log" target="_blank">Log</a> (hoặc báo admin nếu cần Force unlock).</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="status-panel">
-        <div class="status-header">
-          <i class="fas fa-circle-info"></i>
-          <span>Trạng thái</span>
-        </div>
-
-        <div id="status-indicator" class="status-indicator idle">
-          <div class="status-dot"></div>
-          <span id="result">Chưa chạy</span>
-        </div>
-
-        <div id="progress-bar" class="progress-bar hidden">
-          <div class="progress-fill"></div>
-        </div>
-
-        <div class="info-box">
-          <h4><i class="fas fa-heart"></i> Tip nhanh</h4>
-          <ul>
-            <li>Nếu bạn vừa vào trang và thấy nút Run bị khoá: chờ người khác chạy xong, nút sẽ tự bật lại.</li>
-            <li>Đầu năm chạy mượt thì cuối năm KPI cũng mượt 😄</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>&copy; 2025 · {{ soc_name }} · Happy Tết 🌼</p>
-    </div>
-  </div>
-
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>

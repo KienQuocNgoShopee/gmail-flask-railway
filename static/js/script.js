@@ -8,6 +8,32 @@
   const resultElement = document.getElementById("result");
   const statusIndicator = document.getElementById("status-indicator");
   const progressBar = document.getElementById("progress-bar");
+      // ===== LOG FUNCTIONS (SOC-specific) =====
+  const logBox = document.getElementById("logBox");
+
+  function setLog(text) {
+    if (!logBox) return;
+    logBox.textContent = text || "";
+    logBox.scrollTop = logBox.scrollHeight; // auto scroll xuống cuối
+  }
+
+  async function fetchLog(tail = 400) {
+    const res = await fetch(`/log-data?soc=${encodeURIComponent(SOC)}&tail=${tail}`);
+    const data = await res.json().catch(() => ({}));
+    setLog(data.text || "");
+  }
+
+  function refreshLog() {
+    fetchLog().catch(() => {});
+  }
+
+  function clearLogUI() {
+    setLog("");
+  }
+
+  // expose ra global để nút trong HTML gọi được
+  window.refreshLog = refreshLog;
+  window.clearLogUI = clearLogUI;
 
   function updateStatusUI(status, message, senderEmail = null) {
     if (!resultElement || !statusIndicator) return;
@@ -62,6 +88,7 @@
     } catch (e) {
       updateStatusUI("error", "Lỗi kết nối: " + e.message);
     }
+    fetchLog().catch(() => {});
   }
 
   async function fetchStatus() {
@@ -80,6 +107,7 @@
           } else {
             updateStatusUI("running", data.message || "Đang chạy...");
           }
+          fetchLog().catch(() => {});
         } else {
           const msg = String(data.message || "");
           if (msg.toLowerCase().includes("lỗi")) updateStatusUI("error", msg);
@@ -100,6 +128,7 @@
   // init status
   window.addEventListener("load", async () => {
     try {
+        fetchLog().catch(() => {});
       const data = await fetchStatus();
       if (data.running) {
         if (data.by && data.by !== currentUserEmail) {

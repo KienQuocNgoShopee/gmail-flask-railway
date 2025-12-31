@@ -34,6 +34,12 @@ body{
     radial-gradient(900px 420px at 50% 95%, rgba(255,210,77,0.20), transparent 60%),
     linear-gradient(135deg, var(--tet-red) 0%, var(--shopee-orange) 62%, #FF7A45 100%);
   position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 26px 18px 34px;
 }
 
 /* Pattern hoa mai nhẹ */
@@ -74,8 +80,9 @@ a:hover{ text-decoration: underline; }
 
 .container{
   max-width: 960px;
+  width: 100%;
   margin: 0 auto;
-  padding: 26px 18px 34px;
+  padding: 0;
 }
 
 .header{
@@ -360,7 +367,25 @@ a:hover{ text-decoration: underline; }
   margin-bottom: 12px;
 }
 
+.log-pre{
+  max-height: 320px;
+  overflow: auto;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+
 @media (max-width: 720px){
   .home-grid{ grid-template-columns: 1fr; }
   .header h1{ font-size: 18px; }
+}
+@media (max-height: 720px){
+  body{
+    align-items: flex-start; /* màn hình thấp thì bám trên để dễ scroll */
+  }
 }
