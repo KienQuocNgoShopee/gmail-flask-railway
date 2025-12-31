@@ -37,11 +37,12 @@ body {
   overflow-x: hidden;
 
   /* nền đỏ cam + ánh vàng */
-  background:
-    radial-gradient(1100px 520px at 18% 12%, rgba(247, 211, 106, 0.30), transparent 60%),
-    radial-gradient(900px 520px at 82% 22%, rgba(238, 77, 45, 0.28), transparent 55%),
-    radial-gradient(900px 420px at 50% 95%, rgba(255, 210, 77, 0.20), transparent 60%),
-    linear-gradient(135deg, var(--tet-red) 0%, var(--shopee-orange) 62%, #FF7A45 100%);
+    background:
+    radial-gradient(1200px 640px at 50% 8%, rgba(255,247,230,0.34), transparent 62%),
+    radial-gradient(1000px 560px at 18% 14%, rgba(247,211,106,0.16), transparent 60%),
+    radial-gradient(900px 520px at 82% 22%, rgba(238,77,45,0.14), transparent 62%),
+    radial-gradient(1000px 520px at 55% 100%, rgba(26,166,183,0.10), transparent 60%),
+    linear-gradient(135deg, #8E1730 0%, #E85A3A 58%, #FF8A55 100%);
   position: relative;
 
   display: flex;
@@ -57,7 +58,7 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.10;
+  opacity: 0.07;
   background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='260'%20height='260'%20viewBox='0%200%20260%20260'%3E%3Cg%20fill='none'%3E%3Cg%20transform='translate(60%2C70)'%3E%3Ccircle%20cx='0'%20cy='0'%20r='3'%20fill='%23F7D36A'/%3E%3Cpath%20d='M0-18%20c11%206%2011%2030%200%2036%20c-11-6-11-30%200-36Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M-18%200%20c6-11%2030-11%2036%200%20c-6%2011-30%2011-36%200Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M0%2018%20c-11-6-11-30%200-36%20c11%206%2011%2030%200%2036Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M18%200%20c-6%2011-30%2011-36%200%20c6-11%2030-11%2036%200Z'%20fill='%23F7D36A'/%3E%3C/g%3E%3Cg%20transform='translate(190%2C170)'%3E%3Ccircle%20cx='0'%20cy='0'%20r='3'%20fill='%23F7D36A'/%3E%3Cpath%20d='M0-18%20c11%206%2011%2030%200%2036%20c-11-6-11-30%200-36Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M-18%200%20c6-11%2030-11%2036%200%20c-6%2011-30%2011-36%200Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M0%2018%20c-11-6-11-30%200-36%20c11%206%2011%2030%200%2036Z'%20fill='%23F7D36A'/%3E%3Cpath%20d='M18%200%20c-6%2011-30%2011-36%200%20c6-11%2030-11%2036%200Z'%20fill='%23F7D36A'/%3E%3C/g%3E%3Cpath%20d='M40%2060%20c22-30%2060-30%2082%200'%20stroke='%23FFD24D'%20stroke-width='3'%20stroke-linecap='round'/%3E%3Cpath%20d='M140%20160%20c22-30%2060-30%2082%200'%20stroke='%23FFD24D'%20stroke-width='3'%20stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 260px 260px;
@@ -76,8 +77,8 @@ body::after {
     radial-gradient(circle at 35% 60%, rgba(255, 210, 77, 0.40) 0 2px, transparent 3px),
     radial-gradient(circle at 85% 75%, rgba(255, 210, 77, 0.50) 0 2px, transparent 3px);
   background-size: 220px 220px;
-  opacity: 0.30;
-  animation: confettiFloat 10s linear infinite;
+  opacity: 0.12;
+  animation: confettiFloat 22s linear infinite;
 }
 
 @keyframes confettiFloat {
