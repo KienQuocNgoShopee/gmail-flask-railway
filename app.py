@@ -57,7 +57,11 @@ cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-ADMIN_EMAIL = "danthi.nguyen@spxexpress.com"
+ADMIN_EMAILS = {
+    "danthi.nguyen@spxexpress.com",
+    "canh.lam@spxexpress.com",
+    "quocem.levan@spxexpress.com",
+}
 
 SOC_CONFIG = {
     "bda": {
@@ -317,7 +321,11 @@ def healthz():
 def admin():
     if "user_email" not in session:
         return redirect("/login")
-    if session["user_email"].lower() != ADMIN_EMAIL.lower():
+
+    user_email = session["user_email"].strip().lower()
+    admin_emails = {e.strip().lower() for e in ADMIN_EMAILS}
+
+    if user_email not in admin_emails:
         return "Forbidden", 403
 
     locks = {soc: read_lock(soc) for soc in SOC_CONFIG.keys()}
@@ -327,8 +335,12 @@ def admin():
 def force_unlock():
     if "user_email" not in session:
         return jsonify({"status": "error", "message": "Chưa đăng nhập"}), 401
-    if session["user_email"].lower() != ADMIN_EMAIL.lower():
-        return jsonify({"status": "error", "message": "Forbidden"}), 403
+
+    user_email = session.get("user_email", "").strip().lower()
+    admin_emails = {e.strip().lower() for e in ADMIN_EMAILS}
+    if user_email not in admin_emails:
+        return jsonify({"status":"error","message":"Forbidden"}), 403
+
 
     payload = request.get_json(silent=True) or {}
     soc = (payload.get("soc") or "").lower()
