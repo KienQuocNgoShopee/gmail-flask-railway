@@ -61,6 +61,7 @@ ADMIN_EMAILS = {
     "danthi.nguyen@spxexpress.com",
     "canh.lam@spxexpress.com",
     "quocem.levan@spxexpress.com",
+    "giakhuong.lenguyen@spxexpress.com"
 }
 
 SOC_CONFIG = {
